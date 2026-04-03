@@ -42,6 +42,7 @@ import {
   type PayrollMessage,
   type EncryptedMessage,
 } from './messaging.js'
+import { saveAddress, getAddress, listAddresses } from './addressBook.js'
 import {
   createStrategy,
   listStrategies,
@@ -474,7 +475,6 @@ export const toolDefinitions = [
     },
   },
   {
-  {
     name: 'encrypt_payroll_message' as const,
     description:
       'Encrypt a payroll instruction for a specific recipient using NaCl box (X25519 + XSalsa20-Poly1305). ' +
@@ -560,6 +560,38 @@ export const toolDefinitions = [
         },
       },
       required: ['amount', 'recipient'],
+    },
+  },
+  {
+    name: 'save_contact' as const,
+    description: 'Save a name→address mapping to the address book. Use when the user mentions a new recipient by name and provides their address.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string' as const, description: 'Contact name (e.g. "Alice")' },
+        address: { type: 'string' as const, description: 'EVM or Unlink address' },
+      },
+      required: ['name', 'address'],
+    },
+  },
+  {
+    name: 'lookup_contact' as const,
+    description: 'Look up a saved contact by name. Returns their address if found. Use when the user refers to someone by name without providing an address.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: { type: 'string' as const, description: 'Contact name to look up' },
+      },
+      required: ['name'],
+    },
+  },
+  {
+    name: 'list_contacts' as const,
+    description: 'List all saved contacts in the address book.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+      required: [],
     },
   },
 ] as const
@@ -1338,6 +1370,43 @@ export async function executeTool(
           decrypted,
           payload: decrypted.payload,
           message: 'Message decrypted successfully.',
+        })
+      }
+
+      // ── save_contact ─────────────────────────
+      case 'save_contact': {
+        const { name: contactName, address } = input as { name: string; address: string }
+        await saveAddress(contactName, address)
+        return JSON.stringify({
+          success: true,
+          message: `Saved ${contactName} → ${address}`,
+        })
+      }
+
+      // ── lookup_contact ────────────────────────
+      case 'lookup_contact': {
+        const { name: contactName } = input as { name: string }
+        const address = getAddress(contactName)
+        if (address) {
+          return JSON.stringify({ success: true, name: contactName, address })
+        }
+        return JSON.stringify({
+          success: false,
+          error: `No address found for "${contactName}". Ask the user for their address.`,
+        })
+      }
+
+      // ── list_contacts ─────────────────────────
+      case 'list_contacts': {
+        const contacts = listAddresses()
+        const count = Object.keys(contacts).length
+        return JSON.stringify({
+          success: true,
+          count,
+          contacts,
+          message: count > 0
+            ? `${count} contacts saved`
+            : 'No contacts saved yet. Tell me someone\'s name and address to save them.',
         })
       }
 

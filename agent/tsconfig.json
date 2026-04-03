@@ -10,5 +10,6 @@
     "rootDir": "src",
     "resolveJsonModule": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/test-*.ts", "src/create-user.ts", "src/add-liquidity.ts", "src/run-operations.ts", "src/send-private-message.ts"]
 }
