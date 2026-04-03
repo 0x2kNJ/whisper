@@ -12,7 +12,9 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "@unlink-xyz/sdk": "latest",
     "viem": "^2.21.0",
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.4.0",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

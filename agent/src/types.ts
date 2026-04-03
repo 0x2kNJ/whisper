@@ -76,3 +76,5 @@ export type ToolName =
   | 'resume_strategy'
   | 'edit_strategy'
   | 'private_cross_chain_transfer'
+  | 'encrypt_payroll_message'
+  | 'decrypt_payroll_message'

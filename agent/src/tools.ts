@@ -34,6 +34,15 @@ import {
 import { getQuote as uniGetQuote } from './uniswap.js'
 import type { ToolName, PayrollRecipient, PayrollConfig } from './types.js'
 import {
+  encryptMessage,
+  decryptMessage,
+  generateKeyPair,
+  getPrivacyComparison,
+  encodeForOnChain,
+  type PayrollMessage,
+  type EncryptedMessage,
+} from './messaging.js'
+import {
   createStrategy,
   listStrategies,
   getStrategy,
@@ -462,6 +471,74 @@ export const toolDefinitions = [
         },
       },
       required: ['id'],
+    },
+  },
+  {
+  {
+    name: 'encrypt_payroll_message' as const,
+    description:
+      'Encrypt a payroll instruction for a specific recipient using NaCl box (X25519 + XSalsa20-Poly1305). ' +
+      'Only the holder of the matching secret key can read the message. ' +
+      'Returns the encrypted blob ready for on-chain storage plus a privacy comparison showing what the blockchain sees vs. what the treasurer sees.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        recipients: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              name:    { type: 'string' as const, description: 'Recipient display name' },
+              address: { type: 'string' as const, description: 'EVM address' },
+              amount:  { type: 'string' as const, description: 'Token amount (e.g. "2000")' },
+              share:   { type: 'number' as const, description: 'Optional basis-point share' },
+            },
+            required: ['name', 'address', 'amount'],
+          },
+          description: 'Payroll recipients',
+        },
+        token: {
+          type: 'string' as const,
+          description: 'Token symbol (e.g. "USDC")',
+        },
+        schedule: {
+          type: 'string' as const,
+          description: 'Payment schedule (e.g. "weekly", "monthly")',
+        },
+        memo: {
+          type: 'string' as const,
+          description: 'Optional human-readable memo',
+        },
+        recipientPublicKey: {
+          type: 'string' as const,
+          description: 'Hex-encoded X25519 public key of the treasurer / recipient. If omitted, a fresh keypair is generated and returned.',
+        },
+        senderSecretKey: {
+          type: 'string' as const,
+          description: 'Hex-encoded X25519 secret key of the sender. If omitted, a fresh keypair is generated and returned.',
+        },
+      },
+      required: ['recipients', 'token'],
+    },
+  },
+  {
+    name: 'decrypt_payroll_message' as const,
+    description:
+      'Decrypt an encrypted payroll instruction using the recipient\'s secret key. ' +
+      'Returns the plaintext payroll instruction.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        encryptedMessage: {
+          type: 'object' as const,
+          description: 'The EncryptedMessage object returned by encrypt_payroll_message',
+        },
+        recipientSecretKey: {
+          type: 'string' as const,
+          description: 'Hex-encoded X25519 secret key of the recipient',
+        },
+      },
+      required: ['encryptedMessage', 'recipientSecretKey'],
     },
   },
   {
@@ -1204,6 +1281,63 @@ export async function executeTool(
             note: 'On-chain sender appears as Unlink pool (0x647f9b99...), not your address',
           },
           status: 'ARCHITECTURAL_PREVIEW — execute() + CCTP integration pending',
+        })
+      }
+
+      // ── encrypt_payroll_message ──────────────
+      case 'encrypt_payroll_message': {
+        // Build the PayrollMessage
+        const message: PayrollMessage = {
+          version: 1,
+          type: 'payroll_instruction',
+          payload: {
+            recipients: input.recipients as PayrollMessage['payload']['recipients'],
+            token: input.token as string,
+            schedule: input.schedule as string | undefined,
+            memo: input.memo as string | undefined,
+          },
+        }
+
+        // Generate keypairs if not supplied
+        let recipientPublicKey = input.recipientPublicKey as string | undefined
+        let senderSecretKey = input.senderSecretKey as string | undefined
+        let generatedRecipientKeypair: { publicKey: string; secretKey: string } | undefined
+        let generatedSenderKeypair: { publicKey: string; secretKey: string } | undefined
+
+        if (!recipientPublicKey) {
+          generatedRecipientKeypair = generateKeyPair()
+          recipientPublicKey = generatedRecipientKeypair.publicKey
+        }
+        if (!senderSecretKey) {
+          generatedSenderKeypair = generateKeyPair()
+          senderSecretKey = generatedSenderKeypair.secretKey
+        }
+
+        const encrypted = encryptMessage(message, recipientPublicKey, senderSecretKey)
+        const comparison = getPrivacyComparison(encrypted, message)
+
+        return JSON.stringify({
+          success: true,
+          encrypted,
+          onChainCalldata: encodeForOnChain(encrypted),
+          privacyComparison: comparison,
+          ...(generatedRecipientKeypair && { generatedRecipientKeypair }),
+          ...(generatedSenderKeypair && { generatedSenderKeypair }),
+          message: 'Payroll instruction encrypted. Store the recipient secret key securely — it is the only way to decrypt this message.',
+        })
+      }
+
+      // ── decrypt_payroll_message ──────────────
+      case 'decrypt_payroll_message': {
+        const encryptedMsg = input.encryptedMessage as EncryptedMessage
+        const recipientSecretKey = input.recipientSecretKey as string
+        const decrypted = decryptMessage(encryptedMsg, recipientSecretKey)
+
+        return JSON.stringify({
+          success: true,
+          decrypted,
+          payload: decrypted.payload,
+          message: 'Message decrypted successfully.',
         })
       }
 
