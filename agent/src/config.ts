@@ -1,4 +1,8 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import { resolve } from 'path'
+// Load .env from project root (two levels up from agent/src/)
+dotenv.config({ path: resolve(process.cwd(), '.env'), override: true })
+dotenv.config({ path: resolve(process.cwd(), '../.env'), override: true })
 import type { ChainConfig } from './types.js'
 
 export const UNISWAP_API_BASE = 'https://trade-api.gateway.uniswap.org/v1'

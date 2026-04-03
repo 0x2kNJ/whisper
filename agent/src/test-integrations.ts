@@ -1,4 +1,7 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import { resolve } from 'path'
+dotenv.config({ path: resolve(process.cwd(), '.env'), override: true })
+dotenv.config({ path: resolve(process.cwd(), '../.env'), override: true })
 import { Anthropic } from '@anthropic-ai/sdk'
 import { baseSepolia, arcTestnet, getEnvOrThrow } from './config.js'
 import { getQuote } from './uniswap.js'
@@ -82,7 +85,7 @@ async function testAnthropicAPI(): Promise<{ message?: string }> {
   })
 
   const response = await client.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 50,
     messages: [
       {
@@ -112,7 +115,7 @@ async function testUniswapQuote(): Promise<{ message?: string }> {
     tokenOut: WETH,
     amount,
     chainId: baseSepolia.chainId,
-    swapper: '0x0000000000000000000000000000000000000000',
+    swapper: '0x712B593eB5Ae6dE062206880BE1BD0121a86ec21',
     type: 'EXACT_INPUT',
     slippageTolerance: 0.5,
   })
@@ -129,7 +132,7 @@ async function testUniswapQuote(): Promise<{ message?: string }> {
 }
 
 async function testUnlinkClientInit(): Promise<{ message?: string }> {
-  const mnemonic = getEnvOrThrow('MNEMONIC')
+  const mnemonic = getEnvOrThrow('UNLINK_MNEMONIC')
   const rpcUrl = baseSepolia.rpcUrl
 
   const client = createUnlinkClientWrapper(mnemonic, rpcUrl)
@@ -158,7 +161,7 @@ async function testUnlinkClientInit(): Promise<{ message?: string }> {
 }
 
 async function testUnlinkBalance(): Promise<{ message?: string }> {
-  const mnemonic = getEnvOrThrow('MNEMONIC')
+  const mnemonic = getEnvOrThrow('UNLINK_MNEMONIC')
   const rpcUrl = baseSepolia.rpcUrl
 
   const client = createUnlinkClientWrapper(mnemonic, rpcUrl)
