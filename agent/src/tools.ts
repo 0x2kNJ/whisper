@@ -33,6 +33,15 @@ import {
 } from './unlink.js'
 import { getQuote as uniGetQuote } from './uniswap.js'
 import type { ToolName, PayrollRecipient, PayrollConfig } from './types.js'
+import {
+  createStrategy,
+  listStrategies,
+  getStrategy,
+  updateStrategy,
+  pauseStrategy,
+  resumeStrategy,
+  createFromTemplate,
+} from './strategies.js'
 
 // ---------------------------------------------------------------------------
 // Tool definitions (Anthropic tool_use format)
@@ -263,6 +272,196 @@ export const toolDefinitions = [
         },
       },
       required: ['payrollId'],
+    },
+  },
+  // ── Strategy management ──────────────────────────────────────────────────
+  {
+    name: 'list_strategies' as const,
+    description:
+      'List all saved payroll strategies with their current status, type, recipient count, and schedule. Returns strategies sorted by creation date (newest first).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        statusFilter: {
+          type: 'string' as const,
+          enum: ['active', 'paused', 'completed'],
+          description: 'Optional: filter strategies by status',
+        },
+      },
+      required: [] as string[],
+    },
+  },
+  {
+    name: 'get_strategy' as const,
+    description:
+      'Get full details of a specific payroll strategy including recipients, conditions, execution history, and total spent.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: {
+          type: 'string' as const,
+          description: 'Strategy UUID',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'create_strategy' as const,
+    description:
+      'Create a new payroll strategy, either from a predefined template or fully custom. ' +
+      'Templates: standard_payroll (weekly team pay), vesting_schedule (12-month cliff), ' +
+      'performance_bonus (price-triggered), contractor_payment (one-time on delivery).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        template: {
+          type: 'string' as const,
+          enum: ['standard_payroll', 'vesting_schedule', 'performance_bonus', 'contractor_payment'],
+          description: 'Optional: base template to start from',
+        },
+        name: {
+          type: 'string' as const,
+          description: 'Human-readable strategy name',
+        },
+        type: {
+          type: 'string' as const,
+          enum: ['standard', 'vesting', 'performance', 'contractor'],
+          description: 'Strategy type',
+        },
+        recipients: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              name:    { type: 'string' as const, description: 'Recipient display name' },
+              address: { type: 'string' as const, description: 'EVM address' },
+              amount:  { type: 'string' as const, description: 'Token amount per period (e.g. "3500")' },
+              share:   { type: 'number' as const, description: 'Basis-point share for pro-rata splits' },
+            },
+            required: ['name', 'address', 'amount'],
+          },
+          description: 'Payroll recipients — overrides template recipients when provided',
+        },
+        token: {
+          type: 'string' as const,
+          description: 'Token symbol (default: USDC)',
+        },
+        schedule: {
+          type: 'string' as const,
+          description: 'Payment frequency: "weekly", "biweekly", "monthly", "one-time"',
+        },
+        privacyLevel: {
+          type: 'string' as const,
+          enum: ['private', 'public'],
+          description: 'Whether payments are shielded via Unlink (default: private)',
+        },
+        totalBudget: {
+          type: 'string' as const,
+          description: 'Total allocated budget for this strategy (e.g. "120000")',
+        },
+        conditions: {
+          type: 'object' as const,
+          properties: {
+            vestingDuration: { type: 'number' as const, description: 'Vesting duration in seconds' },
+            oracleAddress:   { type: 'string' as const, description: 'Chainlink price feed address' },
+            triggerPrice:    { type: 'string' as const, description: 'Price threshold (e.g. "4000")' },
+            operator:        { type: 'string' as const, enum: ['GT', 'LT'], description: 'GT = above price, LT = below price' },
+          },
+          description: 'Optional execution conditions (vesting cliff, oracle trigger)',
+        },
+      },
+      required: [] as string[],
+    },
+  },
+  {
+    name: 'pause_strategy' as const,
+    description:
+      'Pause an active payroll strategy. The strategy is preserved with its history but will not execute until resumed.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: {
+          type: 'string' as const,
+          description: 'Strategy UUID to pause',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'resume_strategy' as const,
+    description:
+      'Resume a previously paused payroll strategy, returning it to active status.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: {
+          type: 'string' as const,
+          description: 'Strategy UUID to resume',
+        },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'edit_strategy' as const,
+    description:
+      'Modify an existing payroll strategy. Supports updating recipients, amounts, schedule, token, privacy level, budget, or oracle conditions. Only the supplied fields are changed.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: {
+          type: 'string' as const,
+          description: 'Strategy UUID to update',
+        },
+        name: {
+          type: 'string' as const,
+          description: 'New display name',
+        },
+        recipients: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              name:    { type: 'string' as const },
+              address: { type: 'string' as const },
+              amount:  { type: 'string' as const },
+              share:   { type: 'number' as const },
+            },
+            required: ['name', 'address', 'amount'],
+          },
+          description: 'Replacement recipients list (replaces all existing recipients)',
+        },
+        schedule: {
+          type: 'string' as const,
+          description: 'New payment schedule: "weekly", "biweekly", "monthly", "one-time"',
+        },
+        token: {
+          type: 'string' as const,
+          description: 'New token symbol',
+        },
+        privacyLevel: {
+          type: 'string' as const,
+          enum: ['private', 'public'],
+          description: 'New privacy level',
+        },
+        totalBudget: {
+          type: 'string' as const,
+          description: 'Updated total budget',
+        },
+        conditions: {
+          type: 'object' as const,
+          properties: {
+            vestingDuration: { type: 'number' as const },
+            oracleAddress:   { type: 'string' as const },
+            triggerPrice:    { type: 'string' as const },
+            operator:        { type: 'string' as const, enum: ['GT', 'LT'] },
+          },
+          description: 'Updated execution conditions (merged with existing conditions)',
+        },
+      },
+      required: ['id'],
     },
   },
 ] as const
@@ -849,6 +1048,116 @@ export async function executeTool(
           cancelled,
           milestones,
           chain: 'Arc Testnet',
+        })
+      }
+
+      // ── list_strategies ──────────────────────
+      case 'list_strategies': {
+        const all = await listStrategies()
+        const statusFilter = input.statusFilter as string | undefined
+        const results = statusFilter
+          ? all.filter((s) => s.status === statusFilter)
+          : all
+
+        return JSON.stringify({
+          success: true,
+          count: results.length,
+          strategies: results.map((s) => ({
+            id: s.id,
+            name: s.name,
+            type: s.type,
+            status: s.status,
+            schedule: s.schedule,
+            token: s.token,
+            recipientCount: s.recipients.length,
+            spent: s.spent,
+            totalBudget: s.totalBudget,
+            executionCount: s.executions.length,
+            createdAt: s.createdAt,
+            lastExecutedAt: s.lastExecutedAt,
+          })),
+        })
+      }
+
+      // ── get_strategy ──────────────────────────
+      case 'get_strategy': {
+        const strategy = await getStrategy(input.id as string)
+        if (!strategy) {
+          return JSON.stringify({ success: false, error: `Strategy not found: ${input.id}` })
+        }
+        return JSON.stringify({ success: true, strategy })
+      }
+
+      // ── create_strategy ───────────────────────
+      case 'create_strategy': {
+        const templateName = input.template as string | undefined
+
+        const overrides: Partial<import('./strategies.js').PayrollStrategy> = {}
+        if (input.name)         overrides.name         = input.name as string
+        if (input.type)         overrides.type         = input.type as 'standard' | 'vesting' | 'performance' | 'contractor'
+        if (input.recipients)   overrides.recipients   = input.recipients as typeof overrides.recipients
+        if (input.token)        overrides.token        = input.token as string
+        if (input.schedule)     overrides.schedule     = input.schedule as string
+        if (input.privacyLevel) overrides.privacyLevel = input.privacyLevel as 'private' | 'public'
+        if (input.totalBudget)  overrides.totalBudget  = input.totalBudget as string
+        if (input.conditions)   overrides.conditions   = input.conditions as typeof overrides.conditions
+
+        const strategy = templateName
+          ? await createFromTemplate(templateName, overrides)
+          : await createStrategy(overrides)
+
+        return JSON.stringify({
+          success: true,
+          strategy,
+          message: `Created strategy "${strategy.name}" (${strategy.id})`,
+        })
+      }
+
+      // ── pause_strategy ────────────────────────
+      case 'pause_strategy': {
+        const strategy = await pauseStrategy(input.id as string)
+        return JSON.stringify({
+          success: true,
+          strategy,
+          message: `Strategy "${strategy.name}" is now paused`,
+        })
+      }
+
+      // ── resume_strategy ───────────────────────
+      case 'resume_strategy': {
+        const strategy = await resumeStrategy(input.id as string)
+        return JSON.stringify({
+          success: true,
+          strategy,
+          message: `Strategy "${strategy.name}" is now active`,
+        })
+      }
+
+      // ── edit_strategy ─────────────────────────
+      case 'edit_strategy': {
+        const { id, ...rawUpdates } = input as { id: string } & Record<string, unknown>
+        const updates: Partial<import('./strategies.js').PayrollStrategy> = {}
+
+        if (rawUpdates.name)         updates.name         = rawUpdates.name as string
+        if (rawUpdates.recipients)   updates.recipients   = rawUpdates.recipients as typeof updates.recipients
+        if (rawUpdates.schedule)     updates.schedule     = rawUpdates.schedule as string
+        if (rawUpdates.token)        updates.token        = rawUpdates.token as string
+        if (rawUpdates.privacyLevel) updates.privacyLevel = rawUpdates.privacyLevel as 'private' | 'public'
+        if (rawUpdates.totalBudget)  updates.totalBudget  = rawUpdates.totalBudget as string
+        if (rawUpdates.conditions) {
+          // Get current strategy to merge conditions
+          const existing = await getStrategy(id)
+          updates.conditions = {
+            ...(existing?.conditions ?? {}),
+            ...(rawUpdates.conditions as object),
+          }
+        }
+
+        const strategy = await updateStrategy(id, updates)
+        return JSON.stringify({
+          success: true,
+          strategy,
+          message: `Strategy "${strategy.name}" updated successfully`,
         })
       }
 
