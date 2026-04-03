@@ -80,13 +80,11 @@ whisper/
 
 Example operations executed on-chain:
 
-| Operation | Tx Hash | Chain | Status |
-|-----------|---------|-------|--------|
-| Private USDC Transfer | `0x7a2c...` | Base Sepolia | Confirmed |
-| Uniswap Swap (via Unlink) | `0x9f1b...` | Base Sepolia | Confirmed |
-| Escrow Creation | `0x4d8e...` | Arc Testnet | Confirmed |
-
-(Full transaction hashes available in production deployment)
+| Operation | Tx Hash | Chain |
+|-----------|---------|-------|
+| WhisperEscrow Deploy | [`0x456920...`](https://testnet.arcscan.app/tx/0x456920048561473645ab154bff913a19a0b6385717e0de4434810948ef98ff13) | Arc Testnet |
+| USDC Approval | [`0x7c96ed...`](https://testnet.arcscan.app/tx/0x7c96ed31157952d41da41a16be9259f82ac9b47bc46e72634016e9c0e429c3b2) | Arc Testnet |
+| Escrow Payroll Creation | [`0x4919ff...`](https://testnet.arcscan.app/tx/0x4919ffe66f56814cae1b9ebb6720d75a0d7cad58d501da6d6ce06ed38342b8b0) | Arc Testnet |
 
 ## Future Work
 
