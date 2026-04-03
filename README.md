@@ -62,6 +62,12 @@ whisper/
 └── docs/               Architecture decisions + plans
 ```
 
+## Deployed Contracts
+
+| Contract | Address | Chain | Explorer |
+|----------|---------|-------|----------|
+| WhisperEscrow | `0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6` | Arc Testnet | [View](https://testnet.arcscan.app/address/0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6) |
+
 ## Team
 
 Built at ETHGlobal Cannes 2026.
