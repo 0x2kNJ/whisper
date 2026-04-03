@@ -74,6 +74,7 @@ whisper/
 
 | Contract | Address | Chain | Explorer |
 |----------|---------|-------|----------|
+| WhisperVault | `0x86848019781cfd56A0483C17904a80Ca7C4F09B1` | Base Sepolia | [View](https://sepolia.basescan.org/address/0x86848019781cfd56A0483C17904a80Ca7C4F09B1) |
 | WhisperEscrow | `0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6` | Arc Testnet | [View](https://testnet.arcscan.app/address/0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6) |
 
 ## Transaction Proof
