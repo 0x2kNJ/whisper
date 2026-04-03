@@ -100,10 +100,10 @@ function ThinkingIndicator() {
 // ---------------------------------------------------------------------------
 
 const SUGGESTED_PROMPTS = [
-  'What is my current private balance?',
-  'Get a quote to swap 1000 USDC for WETH',
-  'Send 100 USDC privately to 0xabc...',
-  'Create an escrow with 1 milestone',
+  'Pay my team privately: Alice 2000 USDC, Bob 1500 USDC, Charlie 1000 USDC',
+  'Set up a weekly payroll strategy for the engineering team',
+  'Create an escrow for Dave: 5000 USDC, release when ETH > $4000',
+  'Swap 200 USDC to ETH for Bob and send Alice 500 USDC — all private',
 ]
 
 // ---------------------------------------------------------------------------
