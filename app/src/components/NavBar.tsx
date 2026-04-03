@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Strategies', href: '/strategies' },
   { label: 'Escrow', href: '/escrow' },
+  { label: 'Privacy', href: '/privacy' },
 ]
 
 export default function NavBar() {
