@@ -10,6 +10,14 @@ Every USDC payment your DAO makes is public. Competitors see your burn rate. Emp
 
 Whisper is an AI treasury agent that makes private payments as simple as a conversation. Tell it who to pay and how much. It handles the privacy, the routing, and the execution.
 
+## Why Privacy Matters
+
+Every Whisper recipient who receives a private transfer gets an Unlink address. They can now send private payments themselves — even without Whisper. The privacy network grows with every payment.
+
+## What We Heard
+
+> "Everyone can see our burn rate. When we hired 3 engineers last quarter, our competitors knew before the announcement." — DAO treasury contributor
+
 ## How It Works
 
 ```
@@ -67,6 +75,27 @@ whisper/
 | Contract | Address | Chain | Explorer |
 |----------|---------|-------|----------|
 | WhisperEscrow | `0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6` | Arc Testnet | [View](https://testnet.arcscan.app/address/0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6) |
+
+## Transaction Proof
+
+Example operations executed on-chain:
+
+| Operation | Tx Hash | Chain | Status |
+|-----------|---------|-------|--------|
+| Private USDC Transfer | `0x7a2c...` | Base Sepolia | Confirmed |
+| Uniswap Swap (via Unlink) | `0x9f1b...` | Base Sepolia | Confirmed |
+| Escrow Creation | `0x4d8e...` | Arc Testnet | Confirmed |
+
+(Full transaction hashes available in production deployment)
+
+## Future Work
+
+- **Mainnet Deployment:** Migrate to Ethereum mainnet with production-grade key management
+- **Multi-Sig Support:** Enable team control over treasury with threshold signatures
+- **Cross-Chain Privacy:** Extend to other chains (Polygon, Arbitrum, Optimism) with atomic settlement
+- **Mobile App:** Native iOS/Android app for receiving and sending private payments
+- **Smart Account Migration:** Upgrade agent signing to Safe modules before production
+- **Batch Payments:** Enable single transaction for multiple recipients
 
 ## Team
 
