@@ -2,6 +2,10 @@
 
 > Say what you want to pay in English. Whisper handles the privacy, routing, and execution.
 
+**Live Demo:** https://app-gamma-one-12.vercel.app
+**Privacy Comparison:** https://app-gamma-one-12.vercel.app/privacy
+**Encrypted Tx on Basescan:** https://sepolia.basescan.org/tx/0x012b697a55077aadcf983147f7da4c496ee8b2d607f95c84b3c89474fa81d920
+
 ## The Problem
 
 Every USDC payment your DAO makes is public. Competitors see your burn rate. Employees know each other's salaries. Vendors see your payment patterns. On-chain transparency is a feature — until it isn't.
@@ -20,15 +24,36 @@ Every Whisper recipient who receives a private transfer gets an Unlink address. 
 
 ## How It Works
 
-```
-User (plain English) → Claude AI Agent (visible reasoning)
-                          │
-                          ├─ check_balance      → Unlink private balance
-                          ├─ get_quote          → Uniswap Trading API
-                          ├─ private_transfer   → Unlink (sender hidden)
-                          ├─ private_swap       → Unlink execute() → Uniswap
-                          ├─ create_escrow      → WhisperEscrow on Arc
-                          └─ schedule_payroll   → Recurring private payments
+```mermaid
+graph TB
+    User["👤 User (Natural Language)"] --> Agent["🧠 Claude AI Agent"]
+    Agent -->|check_balance| Unlink["🔒 Unlink SDK"]
+    Agent -->|get_quote| Uniswap["🔄 Uniswap API"]
+    Agent -->|private_transfer| Unlink
+    Agent -->|private_swap| Unlink
+    Agent -->|create_escrow| Arc["⛓️ Arc Testnet"]
+    Agent -->|schedule_payroll| Scheduler["⏰ Scheduler"]
+    Agent -->|encrypt_message| Crypto["🔐 NaCl Encryption"]
+
+    Unlink -->|"execute()"| Uniswap
+    Unlink -->|"CCTP"| Arc
+
+    subgraph "Privacy Layer (Base Sepolia)"
+        Unlink
+        Uniswap
+    end
+
+    subgraph "Settlement Layer"
+        Arc
+        Escrow["📋 WhisperEscrow"]
+        Arc --> Escrow
+    end
+
+    subgraph "Agent Tools (18 total)"
+        Agent
+        Scheduler
+        Crypto
+    end
 ```
 
 ## Built With

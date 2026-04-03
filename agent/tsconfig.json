@@ -11,5 +11,5 @@
     "resolveJsonModule": true
   },
   "include": ["src"],
-  "exclude": ["src/test-*.ts", "src/create-user.ts", "src/add-liquidity.ts", "src/run-operations.ts", "src/send-private-message.ts"]
+  "exclude": ["src/test-*.ts", "src/create-user.ts", "src/add-liquidity.ts", "src/run-operations.ts", "src/send-private-message.ts", "src/*.test.ts"]
 }

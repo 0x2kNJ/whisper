@@ -162,7 +162,63 @@ export function createScrollSections(): HTMLElement {
   innerD.appendChild(logoRow)
   container.appendChild(sectionD)
 
-  // Section E: Footer
+  // Section E: Transaction Proof
+  const sectionE = createSection('proof')
+  sectionE.style.minHeight = '50vh'
+  const headlineE = document.createElement('h2')
+  headlineE.className = 'section-headline'
+  headlineE.style.cssText = 'text-align:center;font-size:0.75rem;font-weight:300;color:#555;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:2rem;'
+  headlineE.textContent = 'Verified on-chain'
+
+  const txTable = document.createElement('div')
+  txTable.style.cssText = 'display:flex;flex-direction:column;gap:1rem;max-width:700px;margin:0 auto;'
+
+  const txs = [
+    { op: 'WhisperEscrow Deploy', chain: 'Arc', hash: '0x456920...', url: 'https://testnet.arcscan.app/tx/0x456920048561473645ab154bff913a19a0b6385717e0de4434810948ef98ff13' },
+    { op: 'Payroll Escrow Created', chain: 'Arc', hash: '0x4919ff...', url: 'https://testnet.arcscan.app/tx/0x4919ffe66f56814cae1b9ebb6720d75a0d7cad58d501da6d6ce06ed38342b8b0' },
+    { op: 'Encrypted Message', chain: 'Base Sepolia', hash: '0x012b69...', url: 'https://sepolia.basescan.org/tx/0x012b697a55077aadcf983147f7da4c496ee8b2d607f95c84b3c89474fa81d920' },
+    { op: 'Uniswap Pool + Liquidity', chain: 'Base Sepolia', hash: '0xca5371...', url: 'https://sepolia.basescan.org/tx/0xca537191bbc62f1ed638df8e90a8a860fdad038febabf45814bbc909db020e85' },
+    { op: 'WhisperVault Deploy', chain: 'Base Sepolia', hash: '0xe5a482...', url: 'https://sepolia.basescan.org/tx/0xe5a482bfc4ac30cd3ac2991b1de001efdf52081d2c34a11f3cdf8be1fba38197' },
+  ]
+
+  for (const tx of txs) {
+    const row = document.createElement('a')
+    row.href = tx.url
+    row.target = '_blank'
+    row.rel = 'noopener'
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;background:#0a0a0a;border:1px solid #222;border-radius:8px;text-decoration:none;transition:border-color 0.3s;cursor:pointer;'
+    row.addEventListener('mouseenter', () => { row.style.borderColor = '#c8d8ff' })
+    row.addEventListener('mouseleave', () => { row.style.borderColor = '#222' })
+
+    const left = document.createElement('div')
+    left.style.cssText = 'display:flex;flex-direction:column;gap:0.25rem;'
+
+    const opName = document.createElement('span')
+    opName.style.cssText = 'color:rgba(255,255,255,0.9);font-size:0.85rem;font-weight:400;'
+    opName.textContent = tx.op
+
+    const chainBadge = document.createElement('span')
+    chainBadge.style.cssText = 'color:#666;font-size:0.7rem;'
+    chainBadge.textContent = tx.chain
+
+    left.appendChild(opName)
+    left.appendChild(chainBadge)
+
+    const hashEl = document.createElement('span')
+    hashEl.style.cssText = 'color:#c8d8ff;font-family:monospace;font-size:0.75rem;'
+    hashEl.textContent = tx.hash + ' →'
+
+    row.appendChild(left)
+    row.appendChild(hashEl)
+    txTable.appendChild(row)
+  }
+
+  const innerE = sectionE.querySelector('.section-inner')!
+  innerE.appendChild(headlineE)
+  innerE.appendChild(txTable)
+  container.appendChild(sectionE)
+
+  // Section F: Footer
   const footer = document.createElement('footer')
   footer.style.cssText = 'width:100%;padding:3rem 1.5rem;border-top:1px solid rgba(255,255,255,0.05);'
   footer.setAttribute('data-animate', '')

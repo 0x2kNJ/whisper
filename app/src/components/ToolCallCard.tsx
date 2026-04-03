@@ -56,14 +56,24 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
 
   const hasInput = Object.keys(toolCall.input).length > 0
   const hasResult = toolCall.result && toolCall.result.length > 0
+  const isSuccess = hasResult && toolCall.result.includes('"success":true')
+  const isError = hasResult && toolCall.result.includes('"success":false')
 
   return (
-    <div className="animate-slide-up my-2 rounded-lg border border-[#222] bg-[#0a0a0a] overflow-hidden">
+    <div className={`animate-slide-up my-2 rounded-lg border overflow-hidden transition-colors duration-500 ${
+      isSuccess ? 'border-green-900/50 bg-[#0a0f0a]' : isError ? 'border-red-900/50 bg-[#0f0a0a]' : 'border-[#222] bg-[#0a0a0a]'
+    }`}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
-        <span className="text-[#c8d8ff]">
-          <ToolIcon name={toolCall.name} />
-        </span>
+        {isSuccess ? (
+          <span className="text-green-400 animate-pulse text-sm">✓</span>
+        ) : isError ? (
+          <span className="text-red-400 text-sm">✗</span>
+        ) : (
+          <span className="text-[#c8d8ff]">
+            <ToolIcon name={toolCall.name} />
+          </span>
+        )}
         <span className="text-[#c8d8ff] text-sm font-medium tracking-wide">
           {toolLabel(toolCall.name)}
         </span>

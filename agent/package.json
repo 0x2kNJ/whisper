@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/agent.ts",
+    "test": "vitest run",
     "test-integrations": "tsx src/test-integrations.ts",
     "build": "tsc"
   },
@@ -19,6 +20,7 @@
   "devDependencies": {
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "vitest": "^3.0.0"
   }
 }
