@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-space-grotesk: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'ui-monospace', 'SFMono-Regular', 'Menlo', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: var(--font-space-grotesk);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Thin scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Selection */
+::selection {
+  background: rgba(200, 216, 255, 0.2);
+  color: #fff;
+}
+
+/* Pulsing dots animation for thinking state */
+@keyframes thinkingDot {
+  0%, 80%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.thinking-dot:nth-child(1) { animation: thinkingDot 1.4s ease-in-out infinite 0s; }
+.thinking-dot:nth-child(2) { animation: thinkingDot 1.4s ease-in-out infinite 0.2s; }
+.thinking-dot:nth-child(3) { animation: thinkingDot 1.4s ease-in-out infinite 0.4s; }
+
+/* Prose-like formatting for assistant message text */
+.message-content p {
+  margin-bottom: 0.75rem;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.message-content code {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+  color: #c8d8ff;
+}
+
+.message-content pre {
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+
+.message-content pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #e4e4e7;
+}
+
+.message-content strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.message-content ul, .message-content ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.message-content li {
+  margin-bottom: 0.25rem;
+}
+
+.message-content h1, .message-content h2, .message-content h3 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  color: #fff;
+}
