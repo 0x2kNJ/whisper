@@ -75,3 +75,4 @@ export type ToolName =
   | 'pause_strategy'
   | 'resume_strategy'
   | 'edit_strategy'
+  | 'private_cross_chain_transfer'

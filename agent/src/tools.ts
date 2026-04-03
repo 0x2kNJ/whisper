@@ -464,6 +464,27 @@ export const toolDefinitions = [
       required: ['id'],
     },
   },
+  {
+    name: 'private_cross_chain_transfer' as const,
+    description:
+      'Transfer USDC privately from Base Sepolia to Arc Testnet via Unlink execute() + CCTP. ' +
+      'The sender is hidden (appears as Unlink pool on-chain). Recipient and amount are visible on Arc side. ' +
+      'NOTE: This is an architectural preview — CCTP cross-chain execution requires Unlink execute() support for CCTP calls.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        amount: {
+          type: 'string' as const,
+          description: 'Amount of USDC to transfer (human-readable, e.g. "100")',
+        },
+        recipient: {
+          type: 'string' as const,
+          description: 'Recipient address on Arc Testnet (0x...)',
+        },
+      },
+      required: ['amount', 'recipient'],
+    },
+  },
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -1158,6 +1179,31 @@ export async function executeTool(
           success: true,
           strategy,
           message: `Strategy "${strategy.name}" updated successfully`,
+        })
+      }
+
+      // ── private_cross_chain_transfer ────────
+      case 'private_cross_chain_transfer': {
+        const { amount, recipient } = input as { amount: string; recipient: string }
+        // Architectural preview — describes what would happen
+        return JSON.stringify({
+          success: true,
+          preview: true,
+          message: `Cross-chain private transfer: ${amount} USDC from Base Sepolia → Arc Testnet`,
+          flow: [
+            `1. Withdraw ${amount} USDC from Unlink private balance`,
+            `2. Approve USDC to CCTP TokenMessenger (0x8FE6B999...)`,
+            `3. Call depositForBurn(${amount}, ARC_DOMAIN, ${recipient}, USDC)`,
+            `4. CCTP burns USDC on Base Sepolia`,
+            `5. CCTP mints ${amount} USDC on Arc Testnet to ${recipient}`,
+          ],
+          privacy: {
+            senderHidden: true,
+            recipientVisible: true,
+            amountVisible: true,
+            note: 'On-chain sender appears as Unlink pool (0x647f9b99...), not your address',
+          },
+          status: 'ARCHITECTURAL_PREVIEW — execute() + CCTP integration pending',
         })
       }
 
