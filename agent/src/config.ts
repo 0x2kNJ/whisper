@@ -6,7 +6,7 @@ dotenv.config({ path: resolve(process.cwd(), '../.env'), override: true })
 import type { ChainConfig } from './types.js'
 
 export const UNISWAP_API_BASE = 'https://trade-api.gateway.uniswap.org/v1'
-export const UNLINK_API_BASE = 'https://api.unlink.xyz'
+export const UNLINK_API_BASE = 'https://staging-api.unlink.xyz'
 
 export const baseSepolia: ChainConfig = {
   chainId: 84532,
