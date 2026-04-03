@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+  background: #000;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(200, 216, 255, 0.3);
+  color: #fff;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ============================================
+   INTRO OVERLAY — white bg, black text, Enter button
+   Sits on TOP of everything (z-500).
+   On click: fades opacity to 0 over 2.5s.
+   Behind it: hero.png (always visible) + white hero text.
+   ============================================ */
+#intro-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 500;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 2.5s ease-out;
+}
+
+#intro-overlay #main-title {
+  position: absolute;
+  top: 86%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(4rem, 15vw, 12rem);
+  font-weight: 300;
+  color: #000;
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  text-align: center;
+}
+
+#intro-overlay #main-tagline {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  font-weight: 300;
+  color: #999;
+  line-height: 1.5;
+  text-align: center;
+}
+
+#enter-btn {
+  position: absolute;
+  top: 56%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 0.75rem 2.5rem;
+  background: #111;
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+#enter-btn:hover {
+  background: #333;
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+/* ============================================
+   HERO TEXT — white text, behind intro overlay
+   Same size/position as intro text.
+   Revealed when intro overlay fades out.
+   Fades out on scroll.
+   ============================================ */
+#hero-text {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100vh;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-title-text {
+  position: absolute;
+  top: 86%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(4rem, 15vw, 12rem);
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+  text-align: center;
+}
+
+.hero-tagline-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 1.5rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ============================================
+   SCROLL SECTIONS
+   ============================================ */
+#scroll-sections {
+  background: transparent;
+}
+
+#scroll-sections > section#problem {
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.55) 0%,
+    rgba(0,0,0,0.65) 100%
+  );
+}
+
+#scroll-sections > section#how-it-works {
+  background: rgba(0,0,0,0.7);
+}
+
+#scroll-sections > section#demo {
+  background: rgba(0,0,0,0.8);
+}
+
+#scroll-sections > section#partners {
+  background: rgba(0,0,0,0.9);
+}
+
+#scroll-sections > footer {
+  background: #000;
+}
+
+.scroll-section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 5rem 1.5rem;
+}
+
+/* Section animations */
+[data-animate] .section-headline,
+[data-animate] .section-body,
+[data-animate] .section-rule,
+[data-animate] .step-card,
+[data-animate] .demo-terminal,
+[data-animate] .logo-row,
+[data-animate] .footer-inner {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+[data-animate].visible .section-headline { opacity: 1; transform: translateY(0); }
+[data-animate].visible .section-body { opacity: 1; transform: translateY(0); transition-delay: 0.15s; }
+[data-animate].visible .section-rule { opacity: 1; transform: translateY(0); transition-delay: 0s; }
+[data-animate].visible .demo-terminal { opacity: 1; transform: translateY(0); transition-delay: 0.2s; }
+[data-animate].visible .logo-row { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+[data-animate].visible .footer-inner { opacity: 1; transform: translateY(0); }
+
+[data-animate].visible .step-card:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+[data-animate].visible .step-card:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
+[data-animate].visible .step-card:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.5s; }
+
+/* Terminal */
+.terminal-glow {
+  box-shadow: 0 0 40px -10px rgba(200, 216, 255, 0.1);
+}
+
+.terminal-line {
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.terminal-line.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  #hero-text {
+    padding: 0 5vw;
+  }
+}
