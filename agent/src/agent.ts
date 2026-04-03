@@ -183,7 +183,7 @@ export async function runAgent(
       model: MODEL,
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
-      tools: toolDefinitions as Anthropic.Messages.Tool[],
+      tools: toolDefinitions as unknown as Anthropic.Messages.Tool[],
       messages: messages as Anthropic.Messages.MessageParam[],
     })
 
