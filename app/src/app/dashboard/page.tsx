@@ -7,6 +7,7 @@ import ActivityFeed from '@/components/ActivityFeed'
 import QuickActions from '@/components/QuickActions'
 import ChatSidecar from '@/components/ChatSidecar'
 import AnimatedBalance from '@/components/AnimatedBalance'
+import WalletConnect from '@/components/WalletConnect'
 import { useDashboard } from '@/components/DashboardContext'
 
 // ---------------------------------------------------------------------------
@@ -75,10 +76,10 @@ function formatDate(): string {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<Stats | null>(null)
   const [positions, setPositions] = useState<Position[]>([])
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [balance, setBalance] = useState<string>('0.00')
+  const [allBalances, setAllBalances] = useState<Array<{ symbol: string; balance: string }>>([])
   const [walletAddr, setWalletAddr] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
@@ -97,18 +98,17 @@ export default function DashboardPage() {
   // Fetch all data
   const fetchData = useCallback(async () => {
     try {
-      const [statsRes, positionsRes, activityRes, balancesRes] = await Promise.all([
-        fetch('/api/stats').then(r => r.json()).catch(() => null),
+      const [positionsRes, activityRes, balancesRes] = await Promise.all([
         fetch('/api/positions').then(r => r.json()).catch(() => ({ positions: [] })),
         fetch('/api/activity?limit=20').then(r => r.json()).catch(() => ({ items: [] })),
         fetch('/api/balances').then(r => r.json()).catch(() => null),
       ])
 
-      if (statsRes) setStats(statsRes)
       if (positionsRes?.positions) setPositions(positionsRes.positions)
       if (activityRes?.items) setActivity(activityRes.items)
 
       if (balancesRes?.balances) {
+        setAllBalances(balancesRes.balances)
         const usdc = balancesRes.balances.find(
           (b: { symbol: string }) => b.symbol === 'USDC'
         )
@@ -190,6 +190,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <WalletConnect />
             <span className="text-[10px] uppercase tracking-widest text-[rgba(200,216,255,0.7)] bg-[rgba(200,216,255,0.08)] border border-[rgba(200,216,255,0.15)] rounded-md px-2.5 py-1">
               testnet
             </span>
@@ -213,8 +214,12 @@ export default function DashboardPage() {
           <QuickActions onAction={handleAction} />
         </div>
 
-        {/* Stats Row */}
-        <StatsRow stats={stats} loading={loading} />
+        {/* Treasury Allocation */}
+        <StatsRow
+          balances={allBalances}
+          loading={loading}
+          onRebalance={() => openChat('Rebalance treasury to 80% USDC / 20% WETH')}
+        />
 
         {/* Active Positions */}
         <div className="flex justify-between items-center px-7 mb-3">

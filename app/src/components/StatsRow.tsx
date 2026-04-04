@@ -1,80 +1,131 @@
 'use client'
 
-interface StatsRowProps {
-  stats?: {
-    totalMoved: number
-    transactionCount: number
-    transactionBreakdown: string
-    activePositions: number
-    activeBreakdown: string
-    privacyScore: number
-  } | null
+interface TreasuryAllocationProps {
+  balances?: Array<{ symbol: string; balance: string }>
   loading?: boolean
+  onRebalance?: () => void
 }
 
-export default function StatsRow({ stats, loading }: StatsRowProps) {
+export default function StatsRow({ balances, loading, onRebalance }: TreasuryAllocationProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-4 gap-3 px-7 pb-6">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="shimmer h-[88px] rounded-xl" />
-        ))}
+      <div className="px-7 pb-6">
+        <div className="shimmer h-[120px] rounded-xl" />
       </div>
     )
   }
 
-  const cards = [
-    {
-      label: 'Total Moved',
-      value: stats?.totalMoved?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00',
-      unit: 'USDC',
-      detail: stats && stats.totalMoved > 0 ? '+12% from last month' : 'No activity yet',
-      detailColor: stats && stats.totalMoved > 0 ? 'text-emerald-400' : 'text-zinc-500',
-    },
-    {
-      label: 'Transactions',
-      value: stats?.transactionCount?.toString() ?? '0',
-      unit: null,
-      detail: stats?.transactionBreakdown || 'No transactions',
-      detailColor: 'text-zinc-500',
-    },
-    {
-      label: 'Active Positions',
-      value: stats?.activePositions?.toString() ?? '0',
-      unit: null,
-      detail: stats?.activeBreakdown || 'No active positions',
-      detailColor: 'text-zinc-500',
-    },
-    {
-      label: 'Privacy Score',
-      value: stats?.privacyScore?.toString() ?? '100',
-      unit: '%',
-      detail: (stats?.privacyScore ?? 100) >= 90 ? 'All transactions shielded' : 'Some public transactions',
-      detailColor: (stats?.privacyScore ?? 100) >= 90 ? 'text-emerald-400' : 'text-zinc-500',
-    },
-  ]
+  // Parse balances
+  const usdc = balances?.find(b => b.symbol === 'USDC')
+  const weth = balances?.find(b => b.symbol === 'WETH')
+
+  const usdcVal = parseFloat(usdc?.balance || '0')
+  const wethVal = parseFloat(weth?.balance || '0')
+  // Approximate WETH in USD terms (testnet, rough)
+  const wethUsd = wethVal * 2600
+  const totalUsd = usdcVal + wethUsd
+
+  const usdcPct = totalUsd > 0 ? Math.round((usdcVal / totalUsd) * 100) : 100
+  const wethPct = 100 - usdcPct
+
+  // Target policy
+  const targetUsdc = 80
+  const targetWeth = 20
+  const needsRebalance = Math.abs(usdcPct - targetUsdc) > 5
 
   return (
-    <div className="grid grid-cols-4 gap-3 px-7 pb-6">
-      {cards.map((card) => (
-        <div
-          key={card.label}
-          className="bg-[rgba(255,255,255,0.03)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-xl p-4 hover:border-[rgba(200,216,255,0.15)] transition-colors duration-200"
-        >
-          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
-            {card.label}
+    <div className="px-7 pb-6">
+      <div
+        className="rounded-xl p-5"
+        style={{
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          backdropFilter: 'blur(8px)',
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Treasury Allocation</span>
+            <span className="text-[10px] text-zinc-600">
+              Target: {targetUsdc}/{targetWeth}
+            </span>
           </div>
-          <div className="text-[22px] font-semibold text-white" style={{ fontVariantNumeric: 'tabular-nums' }}>
-            {card.value}
-            {card.unit && (
-              <span className="text-xs font-normal text-zinc-500 ml-1">{card.unit}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-zinc-600">
+              🔒 100% shielded
+            </span>
+            {needsRebalance && onRebalance && (
+              <button
+                onClick={onRebalance}
+                className="text-[10px] px-2.5 py-1 rounded-md transition-all"
+                style={{
+                  background: 'rgba(251,191,36,0.1)',
+                  border: '1px solid rgba(251,191,36,0.2)',
+                  color: '#fbbf24',
+                }}
+              >
+                Rebalance needed →
+              </button>
             )}
           </div>
-          <div className={`text-[11px] mt-1 ${card.detailColor}`}>
-            {card.detail}
-          </div>
         </div>
-      ))}
+
+        {/* Allocation bar */}
+        <div className="flex rounded-lg overflow-hidden h-8 mb-3">
+          <div
+            className="flex items-center justify-center text-[11px] font-medium transition-all duration-700"
+            style={{
+              width: `${Math.max(usdcPct, 5)}%`,
+              background: 'rgba(200, 216, 255, 0.15)',
+              color: '#c8d8ff',
+            }}
+          >
+            {usdcPct}% USDC
+          </div>
+          {wethPct > 0 && (
+            <div
+              className="flex items-center justify-center text-[11px] font-medium transition-all duration-700"
+              style={{
+                width: `${Math.max(wethPct, 5)}%`,
+                background: 'rgba(139, 92, 246, 0.2)',
+                color: '#a78bfa',
+              }}
+            >
+              {wethPct > 3 ? `${wethPct}% WETH` : ''}
+            </div>
+          )}
+        </div>
+
+        {/* Values */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(200,216,255,0.5)' }} />
+              <span className="text-[12px] text-zinc-400">
+                <span className="text-white font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {usdcVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                {' '}USDC
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full" style={{ background: 'rgba(139,92,246,0.5)' }} />
+              <span className="text-[12px] text-zinc-400">
+                <span className="text-white font-medium" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {wethVal.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
+                </span>
+                {' '}WETH
+              </span>
+            </div>
+          </div>
+          {needsRebalance && (
+            <span className="text-[10px] text-amber-500/70">
+              {Math.abs(usdcPct - targetUsdc)}% off target
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
