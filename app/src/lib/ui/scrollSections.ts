@@ -22,19 +22,19 @@ export function createScrollSections(): HTMLElement {
   const headlineA = document.createElement('h2')
   headlineA.className = 'section-headline'
   headlineA.style.cssText = 'font-size:clamp(2rem,5vw,3.5rem);font-weight:400;color:rgba(255,255,255,0.95);line-height:1.1;letter-spacing:-0.02em;margin-bottom:2rem;'
-  headlineA.textContent = 'Every on-chain payment is a public confession.'
+  headlineA.textContent = 'Your treasury is a glass box.'
 
   const bodyA = document.createElement('div')
   bodyA.className = 'section-body'
   bodyA.style.cssText = 'max-width:600px;'
 
   const p1 = document.createElement('p')
-  p1.style.cssText = 'color:#888;font-size:clamp(1rem,1.5vw,1.15rem);font-weight:300;line-height:1.7;margin-bottom:1rem;'
-  p1.textContent = 'Treasury operations today are a structural liability. Every payroll run, vendor payment, and asset rebalancing is visible, trackable, and front-runnable by anyone with a block explorer.'
+  p1.style.cssText = 'color:rgba(255,255,255,0.6);font-size:clamp(1rem,1.5vw,1.15rem);font-weight:300;line-height:1.7;margin-bottom:1rem;'
+  p1.textContent = 'Every swap, every payroll batch, every rebalance — broadcast to the entire network the moment it hits the mempool. Competitors front-run your trades. Analysts map your strategy. MEV bots extract value before your transaction confirms.'
 
   const p2 = document.createElement('p')
-  p2.style.cssText = 'color:#888;font-size:clamp(1rem,1.5vw,1.15rem);font-weight:300;line-height:1.7;'
-  p2.textContent = 'Your strategy is public domain. Until now.'
+  p2.style.cssText = 'color:rgba(255,255,255,0.6);font-size:clamp(1rem,1.5vw,1.15rem);font-weight:300;line-height:1.7;'
+  p2.textContent = 'On-chain transparency was supposed to build trust. Instead, it built a surveillance layer.'
 
   bodyA.appendChild(p1)
   bodyA.appendChild(p2)
@@ -49,40 +49,43 @@ export function createScrollSections(): HTMLElement {
   const sectionB = createSection('how-it-works')
   const headlineB = document.createElement('h2')
   headlineB.className = 'section-headline'
-  headlineB.style.cssText = 'text-align:center;font-size:clamp(1.5rem,3vw,2rem);font-weight:300;color:white;margin-bottom:4rem;letter-spacing:-0.01em;'
-  headlineB.textContent = 'How it works'
+  headlineB.style.cssText = 'text-align:center;font-size:clamp(1.5rem,3vw,2rem);font-weight:300;color:white;margin-bottom:2.5rem;letter-spacing:-0.01em;'
+  headlineB.textContent = 'One agent. Six capabilities.'
 
   const grid = document.createElement('div')
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:3rem;'
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:2.5rem 2rem;max-width:900px;margin:0 auto;'
   grid.className = 'steps-grid-container'
 
   const steps = [
-    { icon: 'waves', title: 'Speak', desc: 'Tell Whisper what you need in plain English. AI handles the complexity.' },
-    { icon: 'hub', title: 'Route', desc: 'AI finds optimal paths across chains and DEXes to minimize slippage.' },
-    { icon: 'blur_on', title: 'Vanish', desc: 'Payments execute privately through Unlink. No public trace of your moves.' },
+    { icon: 'chat', title: 'AI Treasury Agent', desc: '"Pay Alice 0.2 USDC, swap the rest to ETH." Claude interprets intent and executes multi-step operations autonomously.' },
+    { icon: 'swap_horiz', title: 'Uniswap V3', desc: 'Swaps, liquidity, and price quotes routed on-chain. The agent finds optimal paths and handles slippage automatically.' },
+    { icon: 'language', title: 'Cross-Chain via CCTP', desc: 'Move USDC across chains through Circle CCTP. Arc and Base connected — the agent picks the cheapest route.' },
+    { icon: 'visibility_off', title: 'Private via Unlink', desc: 'Every transfer routes through Unlink. On-chain proof exists — but your strategy, amounts, and counterparties stay hidden.' },
+    { icon: 'badge', title: 'ENS Resolution', desc: 'Send to alice.eth instead of raw addresses. The agent resolves ENS names on-chain before executing transfers.' },
+    { icon: 'verified_user', title: 'Private Income Proofs', desc: 'Generate ZK-backed income verification from your on-chain history — prove earnings without revealing balances or counterparties.' },
   ]
 
   for (const step of steps) {
     const card = document.createElement('div')
     card.className = 'step-card'
-    card.style.cssText = 'text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.5rem;'
+    card.style.cssText = 'text-align:center;display:flex;flex-direction:column;align-items:center;gap:0.75rem;'
 
     const iconWrap = document.createElement('div')
-    iconWrap.style.cssText = 'width:64px;height:64px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);'
+    iconWrap.style.cssText = 'width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid rgba(255,255,255,0.05);background:rgba(255,255,255,0.02);'
 
     const iconEl = document.createElement('span')
     iconEl.className = 'material-symbols-outlined'
-    iconEl.style.cssText = 'color:#c8d8ff;font-size:1.75rem;'
+    iconEl.style.cssText = 'color:#c8d8ff;font-size:1.25rem;'
     iconEl.textContent = step.icon
 
     iconWrap.appendChild(iconEl)
 
     const titleEl = document.createElement('h3')
-    titleEl.style.cssText = 'color:white;font-weight:400;font-size:1.15rem;'
+    titleEl.style.cssText = 'color:white;font-weight:400;font-size:0.95rem;'
     titleEl.textContent = step.title
 
     const descEl = document.createElement('p')
-    descEl.style.cssText = 'color:#666;font-weight:300;font-size:0.9rem;line-height:1.6;max-width:220px;'
+    descEl.style.cssText = 'color:rgba(255,255,255,0.6);font-weight:300;font-size:0.75rem;line-height:1.5;'
     descEl.textContent = step.desc
 
     card.appendChild(iconWrap)
@@ -91,7 +94,7 @@ export function createScrollSections(): HTMLElement {
     grid.appendChild(card)
   }
 
-  const innerB = sectionB.querySelector('.section-inner')!
+  const innerB = sectionB.querySelector('.section-inner') as HTMLElement
   innerB.appendChild(headlineB)
   innerB.appendChild(grid)
   container.appendChild(sectionB)
@@ -146,15 +149,40 @@ export function createScrollSections(): HTMLElement {
 
   const logoRow = document.createElement('div')
   logoRow.className = 'logo-row'
-  logoRow.style.cssText = 'display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;'
+  logoRow.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:3rem;flex-wrap:wrap;'
 
-  for (const name of ['Uniswap', 'Unlink', 'Arc', 'Claude', 'Base']) {
-    const logo = document.createElement('span')
-    logo.style.cssText = 'font-size:1.25rem;font-weight:500;color:#444;cursor:default;transition:color 0.3s;'
-    logo.textContent = name
-    logo.addEventListener('mouseenter', () => { logo.style.color = '#888' })
-    logo.addEventListener('mouseleave', () => { logo.style.color = '#444' })
-    logoRow.appendChild(logo)
+  const logos: { name: string; color: string; svg: string }[] = [
+    { name: 'Uniswap', color: '#FF007A', svg: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.5 14.5c-1.5 0-2.7-.8-3.5-2-.8 1.2-2 2-3.5 2-2.5 0-4-2.5-3-5 .7-1.7 2-3 3.5-3.5.5-.2 1-.2 1.5 0 .3.1.5.3.7.5l.8 1 .8-1c.2-.2.4-.4.7-.5.5-.2 1-.2 1.5 0 1.5.5 2.8 1.8 3.5 3.5 1 2.5-.5 5-3 5z' },
+    { name: 'Unlink', color: '#c8d8ff', svg: 'M17 7h-4v2h4c1.65 0 3 1.35 3 3s-1.35 3-3 3h-4v2h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zm-6 8H7c-1.65 0-3-1.35-3-3s1.35-3 3-3h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-2z' },
+    { name: 'Arc', color: '#ffffff', svg: 'M12 2L2 22h20L12 2zm0 4l7 14H5l7-14z' },
+    { name: 'Claude', color: '#DA7756', svg: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l1.5 4.5L18 11l-4.5 1.5L12 17l-1.5-4.5L6 11l4.5-1.5L12 5z' },
+    { name: 'Base', color: '#0052FF', svg: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14v-2h6v-4h-6V8h-1c-2.76 0-5 2.24-5 5s2.24 5 5 5h1z' },
+    { name: 'ENS', color: '#0080BC', svg: 'M5.5 3L2 12l3.5 9h2L4 12l3.5-9h-2zm7 0L9 12l3.5 9h2L11 12l3.5-9h-2zm7 0L16 12l3.5 9h2L18 12l3.5-9h-2z' },
+  ]
+
+  for (const l of logos) {
+    const item = document.createElement('div')
+    item.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.5rem;cursor:default;transition:opacity 0.3s;opacity:0.5;'
+    item.addEventListener('mouseenter', () => { item.style.opacity = '1' })
+    item.addEventListener('mouseleave', () => { item.style.opacity = '0.5' })
+
+    const svgNS = 'http://www.w3.org/2000/svg'
+    const svg = document.createElementNS(svgNS, 'svg')
+    svg.setAttribute('width', '32')
+    svg.setAttribute('height', '32')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    svg.setAttribute('fill', l.color)
+    const path = document.createElementNS(svgNS, 'path')
+    path.setAttribute('d', l.svg)
+    svg.appendChild(path)
+    item.appendChild(svg)
+
+    const label = document.createElement('span')
+    label.style.cssText = 'font-size:0.7rem;font-weight:400;color:#555;letter-spacing:0.05em;'
+    label.textContent = l.name
+    item.appendChild(label)
+
+    logoRow.appendChild(item)
   }
 
   const innerD = sectionD.querySelector('.section-inner')!
@@ -165,7 +193,7 @@ export function createScrollSections(): HTMLElement {
   // Section: Launch App CTA
   const sectionCTA = createSection('launch-cta')
   sectionCTA.style.minHeight = '60vh'
-  sectionCTA.style.background = 'transparent'
+  sectionCTA.style.background = 'rgba(0,0,0,0.85)'
 
   const ctaInner = sectionCTA.querySelector('.section-inner') as HTMLElement
   ctaInner.style.cssText = 'max-width:900px;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2rem;'
@@ -181,7 +209,7 @@ export function createScrollSections(): HTMLElement {
 
   const ctaSub = document.createElement('p')
   ctaSub.className = 'section-body'
-  ctaSub.style.cssText = 'color:#666;font-size:clamp(0.9rem,1.2vw,1.05rem);font-weight:300;line-height:1.7;max-width:440px;'
+  ctaSub.style.cssText = 'color:rgba(255,255,255,0.55);font-size:clamp(0.9rem,1.2vw,1.05rem);font-weight:300;line-height:1.7;max-width:440px;'
   ctaSub.textContent = 'Step into the treasury agent. Speak plainly, move privately.'
 
   const ctaBtn = document.createElement('a')

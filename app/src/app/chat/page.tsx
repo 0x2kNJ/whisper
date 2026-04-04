@@ -7,6 +7,7 @@ import ChatSidebar, {
   type ConversationSummary,
   type BalanceInfo,
 } from '@/components/ChatSidebar'
+import Link from 'next/link'
 import {
   AGENT_ENDPOINT,
   BALANCES_ENDPOINT,
@@ -376,6 +377,7 @@ export default function ChatPage() {
   return (
     <div className="relative flex h-screen bg-black overflow-hidden">
       {/* Ambient background layers */}
+      <div className="chat-hero-bg" />
       <div className="chat-ambient">
         <div className="chat-ambient-orb3" />
       </div>
@@ -425,7 +427,16 @@ export default function ChatPage() {
               <span className="ml-2 text-xs text-zinc-600">Base Sepolia</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/?skip-intro"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-zinc-500 hover:text-white border border-[#222] hover:border-[#444] bg-[#0a0a0a] transition-all text-xs"
+              title="Back to home"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+            </Link>
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             <span className="text-xs text-zinc-600">Online</span>
           </div>

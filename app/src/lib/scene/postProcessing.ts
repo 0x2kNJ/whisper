@@ -5,12 +5,10 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 
-/** Combined film grain + vignette shader */
-const FilmGrainVignetteShader = {
+/** Vignette-only shader (no film grain) */
+const VignetteShader = {
   uniforms: {
     tDiffuse: { value: null },
-    time: { value: 0 },
-    grainIntensity: { value: 0.04 },
     vignetteOffset: { value: 0.9 },
     vignetteDarkness: { value: 1.3 },
   },
@@ -23,24 +21,13 @@ const FilmGrainVignetteShader = {
   `,
   fragmentShader: `
     uniform sampler2D tDiffuse;
-    uniform float time;
-    uniform float grainIntensity;
     uniform float vignetteOffset;
     uniform float vignetteDarkness;
     varying vec2 vUv;
 
-    float random(vec2 co) {
-      return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-    }
-
     void main() {
       vec4 color = texture2D(tDiffuse, vUv);
 
-      // Film grain
-      float grain = random(vUv * time) * grainIntensity;
-      color.rgb += grain;
-
-      // Vignette
       vec2 uv = (vUv - vec2(0.5)) * vec2(vignetteOffset);
       float vig = clamp(
         pow(cos(uv.x * 3.14159), vignetteDarkness) *
@@ -84,14 +71,14 @@ export function createPostProcessing(
   )
   composer.addPass(bloomPass)
 
-  const filmVignettePass = new ShaderPass(FilmGrainVignetteShader)
-  composer.addPass(filmVignettePass)
+  const vignettePass = new ShaderPass(VignetteShader)
+  composer.addPass(vignettePass)
 
   const outputPass = new OutputPass()
   composer.addPass(outputPass)
 
-  function update(time: number) {
-    filmVignettePass.uniforms.time.value = time
+  function update(_time: number) {
+    // no-op — vignette is static
   }
 
   return { composer, update }
