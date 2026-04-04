@@ -32,7 +32,7 @@ export default function VerifyPage() {
   useEffect(() => {
     async function verify() {
       try {
-        const res = await fetch(`/api/verify/${encodeURIComponent(ensName)}`)
+        const res = await fetch(`/api/verify/${ensName}`)
         if (!res.ok) throw new Error('Verification failed')
         const data = await res.json()
         setResult(data)
@@ -196,8 +196,8 @@ export default function VerifyPage() {
                 </div>
               )}
 
-              {/* What This Proves / Doesn't Prove */}
-              <div className="px-6 py-4 border-t border-white/[0.04]">
+              {/* What This Proves / Doesn't Prove — only show when verified */}
+              {result.isVerified && <div className="px-6 py-4 border-t border-white/[0.04]">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-[10px] uppercase tracking-widest text-green-500/60 mb-2 flex items-center gap-1">
@@ -228,7 +228,7 @@ export default function VerifyPage() {
                     </ul>
                   </div>
                 </div>
-              </div>
+              </div>}
 
               {/* Verification Chain */}
               <div className="px-6 py-3 border-t border-white/[0.04] bg-white/[0.01]">
