@@ -22,12 +22,15 @@ export async function GET(
     const normalizedName = normalize(ensName)
     const address = await client.getEnsAddress({ name: normalizedName })
 
-    // Read text records
+    // Read all relevant text records
     const recordKeys = [
       'unlink.address',
       'payroll.proof',
       'payroll.timestamp',
-      'payroll.verified',
+      'payroll.period',
+      'payroll.frequency',
+      'payroll.payer',
+      'payroll.status',
       'description',
     ]
 
@@ -44,13 +47,29 @@ export async function GET(
     const unlinkAddress = textRecords['unlink.address'] || null
     const proofHash = textRecords['payroll.proof'] || null
     const proofTimestamp = textRecords['payroll.timestamp'] || null
+    const payrollPeriod = textRecords['payroll.period'] || null
+    const payrollFrequency = textRecords['payroll.frequency'] || null
+    const payrollPayer = textRecords['payroll.payer'] || null
+    const payrollStatus = textRecords['payroll.status'] || null
+
+    // Derive the display name from the ENS subname
+    const displayName = ensName.split('.')[0]
+    const parentDomain = ensName.split('.').slice(1).join('.')
 
     return NextResponse.json({
       name: ensName,
+      displayName,
+      parentDomain,
       address: address ?? null,
       unlinkAddress,
       proofHash,
       proofTimestamp,
+      payroll: {
+        period: payrollPeriod,
+        frequency: payrollFrequency,
+        payer: payrollPayer,
+        status: payrollStatus,
+      },
       isPrivate: !!unlinkAddress,
       isVerified: !!proofHash,
     })
@@ -58,10 +77,13 @@ export async function GET(
     return NextResponse.json(
       {
         name: ensName,
+        displayName: ensName.split('.')[0],
+        parentDomain: ensName.split('.').slice(1).join('.'),
         address: null,
         unlinkAddress: null,
         proofHash: null,
         proofTimestamp: null,
+        payroll: {},
         isPrivate: false,
         isVerified: false,
         error: err instanceof Error ? err.message : 'Resolution failed',
