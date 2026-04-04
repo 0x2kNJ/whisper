@@ -24,7 +24,7 @@ function formatText(text: string): React.ReactNode {
       return (
         <pre
           key={i}
-          className="my-2 overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.06)] bg-[rgba(5,5,10,0.6)] backdrop-blur-sm px-4 py-3 text-xs font-mono text-zinc-300"
+          className="my-2 overflow-x-auto rounded-md border border-[#222] bg-[#0a0a0a] px-4 py-3 text-xs font-mono text-zinc-300"
         >
           {lang && (
             <div className="mb-2 text-[10px] uppercase tracking-widest text-zinc-600">
@@ -39,7 +39,7 @@ function formatText(text: string): React.ReactNode {
       return (
         <code
           key={i}
-          className="rounded bg-[rgba(200,216,255,0.08)] border border-[rgba(200,216,255,0.12)] px-1 py-0.5 text-[0.85em] font-mono text-[#c8d8ff]"
+          className="rounded bg-[#1a1a1a] border border-[#333] px-1 py-0.5 text-[0.85em] font-mono text-[#c8d8ff]"
         >
           {part.slice(1, -1)}
         </code>
@@ -77,8 +77,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end">
-        <div className="user-message-bubble max-w-[75%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-white leading-relaxed">
+      <div className="flex justify-end animate-fade-in">
+        <div className="max-w-[75%] rounded-2xl rounded-tr-sm bg-[#1a1a1a] border border-[#2a2a2a] px-4 py-3 text-sm text-white leading-relaxed">
           {message.text}
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 animate-slide-up">
       {/* Tool calls appear first (before final text) */}
       {message.toolCalls && message.toolCalls.length > 0 && (
         <div className="flex flex-col gap-1">
@@ -100,18 +100,16 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       {message.text && (
         <div className="flex items-start gap-3">
           {/* Whisper avatar */}
-          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-[10px] font-bold tracking-widest text-[#c8d8ff] w-logo-glow">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff]">
             W
           </div>
           <div className="flex-1 min-w-0">
-            <div className="assistant-message-bubble rounded-2xl rounded-tl-sm px-4 py-3 backdrop-blur-sm">
-              <div className="text-sm text-zinc-200 leading-relaxed message-content">
-                {formatText(message.text)}
-              </div>
-              {message.streaming && (
-                <span className="inline-block h-3 w-0.5 ml-0.5 bg-[#c8d8ff] animate-pulse" />
-              )}
+            <div className="text-sm text-zinc-200 leading-relaxed message-content">
+              {formatText(message.text)}
             </div>
+            {message.streaming && (
+              <span className="inline-block h-3 w-0.5 ml-0.5 bg-[#c8d8ff] animate-pulse" />
+            )}
           </div>
         </div>
       )}
