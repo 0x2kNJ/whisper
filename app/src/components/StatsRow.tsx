@@ -9,7 +9,7 @@ interface TreasuryAllocationProps {
 export default function StatsRow({ balances, loading, onRebalance }: TreasuryAllocationProps) {
   if (loading) {
     return (
-      <div className="px-7 pb-6">
+      <div className="px-4 sm:px-7 pb-6">
         <div className="shimmer h-[120px] rounded-xl" />
       </div>
     )
@@ -34,7 +34,7 @@ export default function StatsRow({ balances, loading, onRebalance }: TreasuryAll
   const needsRebalance = Math.abs(usdcPct - targetUsdc) > 5
 
   return (
-    <div className="px-7 pb-6">
+    <div className="px-4 sm:px-7 pb-6">
       <div
         className="rounded-xl p-5"
         style={{

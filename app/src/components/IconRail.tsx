@@ -25,7 +25,7 @@ const navItems = [
 
 export default function IconRail({ activePath, onChatToggle, isChatOpen }: IconRailProps) {
   return (
-    <nav className="w-16 shrink-0 bg-[rgba(5,5,10,0.8)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.04)] flex flex-col items-center py-4 gap-1 z-10">
+    <nav className="w-16 shrink-0 bg-[rgba(5,5,10,0.8)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.04)] hidden sm:flex flex-col items-center py-4 gap-1 z-10">
       {/* Logo */}
       <div
         className="w-9 h-9 rounded-[10px] flex items-center justify-center font-bold text-base mb-4"

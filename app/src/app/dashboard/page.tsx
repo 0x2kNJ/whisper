@@ -176,7 +176,7 @@ export default function DashboardPage() {
       {/* Content */}
       <div className="relative z-[2] flex flex-col flex-1">
         {/* Top Bar */}
-        <div className="flex justify-between items-center px-7 pt-5 pb-2">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 px-4 sm:px-7 pt-5 pb-2">
           <div>
             <h1 className="text-[22px] font-semibold text-white">{getGreeting()}</h1>
             <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
@@ -210,7 +210,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="px-7 pb-5 pt-2">
+        <div className="px-4 sm:px-7 pb-5 pt-2">
           <QuickActions onAction={handleAction} />
         </div>
 
@@ -222,7 +222,7 @@ export default function DashboardPage() {
         />
 
         {/* Active Positions */}
-        <div className="flex justify-between items-center px-7 mb-3">
+        <div className="flex justify-between items-center px-4 sm:px-7 mb-3">
           <h2 className="text-[13px] font-medium uppercase tracking-[1.5px] text-zinc-500">
             Active Positions
           </h2>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-7 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-4 sm:px-7 pb-6">
           {loading ? (
             <>
               <div className="shimmer h-[180px] rounded-[14px]" />
@@ -263,7 +263,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Activity */}
-        <div className="flex justify-between items-center px-7 mb-3">
+        <div className="flex justify-between items-center px-4 sm:px-7 mb-3">
           <h2 className="text-[13px] font-medium uppercase tracking-[1.5px] text-zinc-500">
             Recent Activity
           </h2>
@@ -272,12 +272,12 @@ export default function DashboardPage() {
           </span>
         </div>
 
-        <div className="px-7 pb-8">
+        <div className="px-4 sm:px-7 pb-8">
           <ActivityFeed items={activity} loading={loading} />
         </div>
 
         {/* Footer */}
-        <div className="mt-auto px-7 pb-4">
+        <div className="mt-auto px-4 sm:px-7 pb-4">
           <p className="text-center text-[10px] text-zinc-700">
             Balances are shielded via Unlink zero-knowledge proofs. Not visible on-chain.
           </p>
