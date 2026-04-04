@@ -94,26 +94,6 @@ export default function DashboardPage() {
     }
   }, [toast])
 
-  // Listen for tool completions from the sidecar
-  const handleToolComplete = useCallback((toolName: string) => {
-    const labels: Record<string, string> = {
-      private_transfer: '✓ Transfer sent — ZK-shielded',
-      batch_private_transfer: '✓ Batch transfer complete — ZK-shielded',
-      private_swap: '✓ Swap executed — ZK-shielded',
-      create_escrow: '✓ Escrow created — milestone locked',
-      schedule_payroll: '✓ Payroll scheduled',
-      verify_payment_proof: '✓ Income proof generated',
-      deposit_to_unlink: '✓ Deposited to Unlink vault',
-      resolve_ens: '✓ ENS resolved',
-    }
-    const label = labels[toolName]
-    if (label) {
-      setToast(label)
-      // Refresh dashboard data
-      fetchData()
-    }
-  }, [fetchData])
-
   // Fetch all data
   const fetchData = useCallback(async () => {
     try {
@@ -144,6 +124,25 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData()
+  }, [fetchData])
+
+  // Listen for tool completions from the sidecar
+  const handleToolComplete = useCallback((toolName: string) => {
+    const labels: Record<string, string> = {
+      private_transfer: '✓ Transfer sent — ZK-shielded',
+      batch_private_transfer: '✓ Batch transfer complete — ZK-shielded',
+      private_swap: '✓ Swap executed — ZK-shielded',
+      create_escrow: '✓ Escrow created — milestone locked',
+      schedule_payroll: '✓ Payroll scheduled',
+      verify_payment_proof: '✓ Income proof generated',
+      deposit_to_unlink: '✓ Deposited to Unlink vault',
+      resolve_ens: '✓ ENS resolved',
+    }
+    const label = labels[toolName]
+    if (label) {
+      setToast(label)
+      fetchData()
+    }
   }, [fetchData])
 
   // Quick action handler — open chat with pre-filled prompt
