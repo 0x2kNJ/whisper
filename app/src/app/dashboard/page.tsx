@@ -137,13 +137,15 @@ export default function DashboardPage() {
       run_cross_chain_payroll: '✓ Cross-chain payroll complete',
       verify_payment_proof: '✓ Income proof generated',
       deposit_to_unlink: '✓ Deposited to Unlink vault',
-      resolve_ens: '✓ ENS resolved',
+      private_cross_chain_transfer: '✓ Bridged to Arc — sender hidden',
+      check_balance: '',
     }
     const label = labels[toolName]
-    if (label) {
-      setToast(label)
-      // Re-fetch after a short delay to let the file system settle
+    if (label !== undefined) {
+      if (label) setToast(label)
+      // Re-fetch quickly, then again after 3s for balance propagation
       setTimeout(() => fetchData(), 500)
+      setTimeout(() => fetchData(), 3000)
     }
   }, [fetchData])
 
