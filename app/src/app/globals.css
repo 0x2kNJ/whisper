@@ -680,10 +680,10 @@ body {
 
 #scroll-sections > section#how-it-works.scroll-section {
   background: rgba(0,0,0,0.82);
-  min-height: auto !important;
+  min-height: 100vh !important;
   padding-top: 6rem;
   padding-bottom: 6rem;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   overflow: visible;
 }
 

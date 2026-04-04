@@ -279,23 +279,24 @@ export default function LandingPage() {
       tagline.style.display = 'none'
       enterBtn.style.display = 'none'
 
-      // White background fades out normally
+      // Fast fade out
+      introOverlay.style.transition = 'opacity 0.3s ease'
       introOverlay.style.opacity = '0'
 
-      // Show scroll indicator after reveal
+      // Show scroll indicator immediately
       setTimeout(() => {
         scrollIndicator.style.opacity = '1'
-      }, 1000)
+      }, 200)
 
-      // Show floating nav after intro fades
+      // Show floating nav fast
       setTimeout(() => {
         floatingNav.style.opacity = '1'
         floatingNav.style.transform = 'translateY(0)'
         floatingNav.style.pointerEvents = 'auto'
-      }, 1500)
+      }, 300)
 
-      setTimeout(() => introOverlay.remove(), 3000)
-      setTimeout(() => { document.body.style.overflow = '' }, 1000)
+      setTimeout(() => introOverlay.remove(), 500)
+      setTimeout(() => { document.body.style.overflow = '' }, 200)
     }
     enterBtn.addEventListener('click', handleEnter)
 

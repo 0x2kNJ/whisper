@@ -57,11 +57,11 @@ export function createScrollSections(): HTMLElement {
   grid.className = 'steps-grid-container'
 
   const steps = [
-    { icon: 'chat', title: 'AI Treasury Agent', desc: '"Pay Alice 0.2 USDC, swap the rest to ETH." Claude interprets intent and executes multi-step operations autonomously.' },
-    { icon: 'lock_clock', title: 'Smart Escrow', desc: 'Lock funds in smart contracts with time-locks and price triggers. Bonus pay releases when ETH hits $4,000 — on Arc Testnet.' },
-    { icon: 'language', title: 'Cross-Chain via CCTP', desc: 'Move tokens privately across chains through Circle CCTP. Arc and Base implemented.' },
+    { icon: 'chat', title: 'Private Treasury Agent', desc: '"Pay Alice 0.2 USDC, swap the rest to ETH." Claude interprets intent and executes multi-step operations autonomously.' },
+    { icon: 'lock_clock', title: 'Private Smart Escrow', desc: 'Lock funds in smart contracts with time-locks and price triggers. Bonus pay releases when ETH hits $4,000 — on Arc Testnet.' },
+    { icon: 'language', title: 'Private Cross-Chain', desc: 'Move tokens privately across chains through Circle CCTP. Arc and Base implemented.' },
     { icon: 'visibility_off', title: 'Private via Unlink', desc: 'Every transaction routes through Unlink. On-chain proof exists — but your strategy, amounts, and counterparties stay hidden.' },
-    { icon: 'badge', title: 'ENS Resolution', desc: 'Say "pay alice.eth" — no addresses needed. ENS names resolve to shielded Unlink addresses, so recipients stay private even though the name is public.' },
+    { icon: 'badge', title: 'Private ENS Resolution', desc: 'Say "pay alice.eth" — no addresses needed. ENS names resolve to shielded Unlink addresses, so recipients stay private even though the name is public.' },
     { icon: 'verified_user', title: 'Private Income Proofs', desc: 'Generate income verification with selective disclosure — prove earnings without revealing balances or counterparties.' },
   ]
 
