@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, FormEvent } from 'react'
 import ChatMessage, { type ChatMessageData } from '@/components/ChatMessage'
 import { type ToolCallInfo } from '@/components/ToolCallCard'
+import ToolProgressCard from '@/components/ToolProgressCard'
 import {
   AGENT_ENDPOINT,
   CONVERSATIONS_ENDPOINT,
@@ -12,6 +13,7 @@ interface ChatSidecarProps {
   isOpen: boolean
   onClose: () => void
   initialPrompt?: string
+  autoSend?: boolean
   width?: number
   onWidthChange?: (w: number) => void
   onToolComplete?: (toolName: string) => void
@@ -43,6 +45,7 @@ export default function ChatSidecar({
   isOpen,
   onClose,
   initialPrompt,
+  autoSend,
   width = 420,
   onWidthChange,
   onToolComplete,
@@ -50,6 +53,7 @@ export default function ChatSidecar({
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [agentHistory, setAgentHistory] = useState<AgentHistoryMessage[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [conversations, setConversations] = useState<Array<{ id: string; title: string; updated_at: number }>>([])
@@ -72,13 +76,21 @@ export default function ChatSidecar({
     }
   }, [isOpen])
 
-  // Set initial prompt when it changes
+  // Set initial prompt — auto-send if flagged (one-click demo actions)
+  const autoSendFired = useRef(false)
   useEffect(() => {
     if (initialPrompt && isOpen) {
-      setInput(initialPrompt)
-      setTimeout(() => inputRef.current?.focus(), 100)
+      if (autoSend && !autoSendFired.current) {
+        autoSendFired.current = true
+        // Small delay so the sidecar slide animation is visible before sending
+        setTimeout(() => sendMessage(initialPrompt), 400)
+      } else {
+        setInput(initialPrompt)
+        setTimeout(() => inputRef.current?.focus(), 100)
+      }
     }
-  }, [initialPrompt, isOpen])
+    if (!isOpen) autoSendFired.current = false
+  }, [initialPrompt, isOpen, autoSend, sendMessage])
 
   // Fetch conversations when opened
   const fetchConversations = useCallback(async () => {
@@ -234,10 +246,15 @@ export default function ChatSidecar({
             let parsed: unknown
             try { parsed = JSON.parse(dataLine) } catch { continue }
 
-            if (eventType === 'text') {
+            if (eventType === 'tool_start') {
+              const { name } = parsed as { name: string }
+              setActiveTool(name)
+              setIsThinking(false)
+            } else if (eventType === 'text') {
               const { text: t } = parsed as { text: string }
               finalResponse += t
               setIsThinking(false)
+              setActiveTool(null)
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId ? { ...m, text: finalResponse, streaming: true } : m,
@@ -246,6 +263,7 @@ export default function ChatSidecar({
             } else if (eventType === 'tool_call') {
               const tc = parsed as ToolCallInfo
               finalToolCalls.push(tc)
+              setActiveTool(null)
               onToolComplete?.(tc.name)
               setMessages((prev) =>
                 prev.map((m) =>
@@ -308,6 +326,7 @@ export default function ChatSidecar({
         )
       } finally {
         setIsThinking(false)
+        setActiveTool(null)
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsgId ? { ...m, streaming: false } : m)),
         )
@@ -469,7 +488,8 @@ export default function ChatSidecar({
             {messages.map((msg) => (
               <ChatMessage key={msg.id} message={msg} />
             ))}
-            {isThinking &&
+            {activeTool && <ToolProgressCard toolName={activeTool} />}
+            {isThinking && !activeTool &&
               !messages.find(
                 (m) => m.role === 'assistant' && m.streaming && (m.text || (m.toolCalls && m.toolCalls.length > 0)),
               ) && <ThinkingIndicator />}

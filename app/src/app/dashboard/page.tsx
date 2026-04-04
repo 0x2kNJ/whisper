@@ -85,7 +85,7 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<string | null>(null)
 
   // Chat sidecar state from context (shared with layout/IconRail)
-  const { chatOpen, chatPrompt, chatWidth, openChat, closeChat, setChatWidth } = useDashboard()
+  const { chatOpen, chatPrompt, chatWidth, autoSend, openChat, sendChat, closeChat, setChatWidth } = useDashboard()
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -218,7 +218,7 @@ export default function DashboardPage() {
         <StatsRow
           balances={allBalances}
           loading={loading}
-          onRebalance={() => openChat('Rebalance treasury to 80% USDC / 20% WETH')}
+          onRebalance={() => sendChat('Rebalance treasury to 80% USDC / 20% WETH')}
         />
 
         {/* Active Positions */}
@@ -289,6 +289,7 @@ export default function DashboardPage() {
         isOpen={chatOpen}
         onClose={closeChat}
         initialPrompt={chatPrompt}
+        autoSend={autoSend}
         width={chatWidth}
         onWidthChange={setChatWidth}
         onToolComplete={handleToolComplete}
