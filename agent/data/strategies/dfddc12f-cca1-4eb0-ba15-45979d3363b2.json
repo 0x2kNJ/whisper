@@ -1,0 +1,24 @@
+{
+  "id": "dfddc12f-cca1-4eb0-ba15-45979d3363b2",
+  "name": "Monthly Team Payroll - Alice & Bob",
+  "type": "standard",
+  "status": "active",
+  "recipients": [
+    {
+      "name": "alice",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.01"
+    },
+    {
+      "name": "bob",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.01"
+    }
+  ],
+  "token": "USDC",
+  "schedule": "monthly",
+  "privacyLevel": "private",
+  "spent": "0",
+  "executions": [],
+  "createdAt": 1775329741631
+}
