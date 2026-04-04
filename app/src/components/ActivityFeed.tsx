@@ -9,6 +9,7 @@ interface ActivityItem {
   token?: string
   timestamp: number
   status: 'success' | 'failed' | 'pending'
+  txHash?: string
 }
 
 interface ActivityFeedProps {
@@ -43,7 +44,7 @@ function formatRelativeTime(timestamp: number): string {
 export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
   if (loading) {
     return (
-      <div className="bg-surface-2 border border-border rounded-[14px] overflow-hidden">
+      <div className="bg-[rgba(255,255,255,0.02)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3.5 px-[18px] py-3.5 border-b border-[rgba(255,255,255,0.03)]">
             <div className="shimmer w-8 h-8 rounded-lg shrink-0" />
@@ -63,7 +64,7 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
 
   if (items.length === 0) {
     return (
-      <div className="bg-surface-2 border border-border rounded-[14px] py-12 text-center">
+      <div className="bg-[rgba(255,255,255,0.02)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-[14px] py-12 text-center">
         <div className="text-2xl mb-2 opacity-30">◈</div>
         <p className="text-zinc-500 text-sm">No activity yet.</p>
         <p className="text-zinc-600 text-xs mt-1">Your treasury transactions will appear here.</p>
@@ -72,7 +73,7 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
   }
 
   return (
-    <div className="bg-surface-2 border border-border rounded-[14px] overflow-hidden">
+    <div className="bg-[rgba(255,255,255,0.02)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden">
       {items.map((item, i) => {
         const config = iconConfig[item.type] || iconConfig.transfer
         return (
@@ -92,7 +93,12 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] text-zinc-300 truncate">{item.title}</div>
+              <div className="text-[13px] text-zinc-300 truncate flex items-center gap-1.5">
+                {item.title}
+                {(item.type === 'transfer' || item.type === 'payroll' || item.type === 'swap') && (
+                  <span className="text-[9px] opacity-60 shrink-0">🔒</span>
+                )}
+              </div>
               <div className="text-[11px] text-zinc-500 truncate">{item.detail}</div>
             </div>
 
@@ -103,8 +109,20 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
                   {item.amount} {item.token || 'USDC'}
                 </div>
               )}
-              <div className="text-[10px] text-zinc-500">
+              <div className="text-[10px] text-zinc-500 flex items-center justify-end gap-1.5">
                 {formatRelativeTime(item.timestamp)}
+                {item.txHash && (
+                  <a
+                    href={`https://sepolia.basescan.org/tx/${item.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] transition-colors"
+                    title="View on BaseScan"
+                  >
+                    ↗
+                  </a>
+                )}
               </div>
             </div>
           </div>

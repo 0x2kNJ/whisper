@@ -23,6 +23,7 @@ interface ActivityItem {
   token?: string
   timestamp: number
   status: 'success' | 'failed' | 'pending'
+  txHash?: string
 }
 
 function buildTitle(tc: { name: string; input?: Record<string, unknown>; result?: string }): string {
@@ -89,13 +90,23 @@ export async function GET(request: Request) {
           if (!type) continue
 
           let status: 'success' | 'failed' | 'pending' = 'success'
+          let txHash: string | undefined
           if (tc.result) {
             try {
               const result = typeof tc.result === 'string' ? JSON.parse(tc.result) : tc.result
               if (result.error || result.status === 'failed') status = 'failed'
+              // Extract txHash from result
+              if (result.txHash) txHash = result.txHash
+              else if (result.transactionHash) txHash = result.transactionHash
+              else if (result.hash) txHash = result.hash
             } catch {
               if (typeof tc.result === 'string' && tc.result.toLowerCase().includes('error')) {
                 status = 'failed'
+              }
+              // Try to extract txHash from string result
+              if (typeof tc.result === 'string') {
+                const hashMatch = tc.result.match(/0x[a-fA-F0-9]{64}/)
+                if (hashMatch) txHash = hashMatch[0]
               }
             }
           }
@@ -109,6 +120,7 @@ export async function GET(request: Request) {
             token: tc.input?.token?.toString() || 'USDC',
             timestamp: tc.timestamp || msg.created_at,
             status,
+            txHash,
           })
         }
       } catch {}

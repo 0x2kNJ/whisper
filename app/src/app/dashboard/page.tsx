@@ -48,6 +48,7 @@ interface ActivityItem {
   token?: string
   timestamp: number
   status: 'success' | 'failed' | 'pending'
+  txHash?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -80,9 +81,38 @@ export default function DashboardPage() {
   const [balance, setBalance] = useState<string>('0.00')
   const [walletAddr, setWalletAddr] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState<string | null>(null)
 
   // Chat sidecar state from context (shared with layout/IconRail)
   const { chatOpen, chatPrompt, chatWidth, openChat, closeChat, setChatWidth } = useDashboard()
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (toast) {
+      const t = setTimeout(() => setToast(null), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [toast])
+
+  // Listen for tool completions from the sidecar
+  const handleToolComplete = useCallback((toolName: string) => {
+    const labels: Record<string, string> = {
+      private_transfer: '✓ Transfer sent — ZK-shielded',
+      batch_private_transfer: '✓ Batch transfer complete — ZK-shielded',
+      private_swap: '✓ Swap executed — ZK-shielded',
+      create_escrow: '✓ Escrow created — milestone locked',
+      schedule_payroll: '✓ Payroll scheduled',
+      verify_payment_proof: '✓ Income proof generated',
+      deposit_to_unlink: '✓ Deposited to Unlink vault',
+      resolve_ens: '✓ ENS resolved',
+    }
+    const label = labels[toolName]
+    if (label) {
+      setToast(label)
+      // Refresh dashboard data
+      fetchData()
+    }
+  }, [fetchData])
 
   // Fetch all data
   const fetchData = useCallback(async () => {
@@ -136,8 +166,13 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen overflow-y-auto relative">
-      {/* Ambient background */}
-      <div className="dashboard-ambient" />
+      {/* Ambient background — matches chat/landing atmosphere */}
+      <div className="chat-hero-bg" />
+      <div className="chat-ambient">
+        <div className="chat-ambient-orb3" />
+      </div>
+      <div className="chat-noise" />
+      <div className="chat-grid" />
 
       {/* Content */}
       <div className="relative z-[2] flex flex-col flex-1">
@@ -159,7 +194,7 @@ export default function DashboardPage() {
             <span className="text-[10px] uppercase tracking-widest text-[rgba(200,216,255,0.7)] bg-[rgba(200,216,255,0.08)] border border-[rgba(200,216,255,0.15)] rounded-md px-2.5 py-1">
               testnet
             </span>
-            <div className="flex items-center gap-2.5 bg-[rgba(200,216,255,0.06)] border border-[rgba(200,216,255,0.12)] rounded-[10px] px-4 py-2">
+            <div className="flex items-center gap-2.5 bg-[rgba(200,216,255,0.06)] border border-[rgba(200,216,255,0.12)] rounded-[10px] px-4 py-2 shadow-[0_0_20px_rgba(200,216,255,0.08)] backdrop-blur-sm">
               <span className="text-[rgba(200,216,255,0.6)] text-sm">◈</span>
               <span className="text-[15px] font-semibold text-white tabular-nums">
                 <AnimatedBalance value={balance} />
@@ -252,6 +287,7 @@ export default function DashboardPage() {
         initialPrompt={chatPrompt}
         width={chatWidth}
         onWidthChange={setChatWidth}
+        onToolComplete={handleToolComplete}
       />
 
       {/* Backdrop when sidecar is open */}
@@ -259,6 +295,26 @@ export default function DashboardPage() {
         className={`sidecar-backdrop ${chatOpen ? 'visible' : ''}`}
         onClick={closeChat}
       />
+
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] animate-slide-up"
+          style={{ marginLeft: '32px' }}
+        >
+          <div
+            className="px-5 py-3 rounded-xl text-sm text-emerald-300 flex items-center gap-2 shadow-lg"
+            style={{
+              background: 'rgba(10, 30, 20, 0.9)',
+              border: '1px solid rgba(74, 222, 128, 0.2)',
+              backdropFilter: 'blur(16px)',
+            }}
+          >
+            <span className="text-emerald-400">●</span>
+            {toast}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

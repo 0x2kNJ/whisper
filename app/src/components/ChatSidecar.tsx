@@ -14,6 +14,7 @@ interface ChatSidecarProps {
   initialPrompt?: string
   width?: number
   onWidthChange?: (w: number) => void
+  onToolComplete?: (toolName: string) => void
 }
 
 interface AgentHistoryMessage {
@@ -44,6 +45,7 @@ export default function ChatSidecar({
   initialPrompt,
   width = 420,
   onWidthChange,
+  onToolComplete,
 }: ChatSidecarProps) {
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [input, setInput] = useState('')
@@ -244,6 +246,7 @@ export default function ChatSidecar({
             } else if (eventType === 'tool_call') {
               const tc = parsed as ToolCallInfo
               finalToolCalls.push(tc)
+              onToolComplete?.(tc.name)
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
@@ -429,16 +432,35 @@ export default function ChatSidecar({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3 justify-end">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold text-[#c8d8ff]"
-              style={{ background: 'rgba(200,216,255,0.08)', border: '1px solid rgba(200,216,255,0.12)' }}
-            >
-              W
-            </div>
+          <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4">
             <div>
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold text-[#c8d8ff] mx-auto mb-3"
+                style={{ background: 'rgba(200,216,255,0.08)', border: '1px solid rgba(200,216,255,0.12)' }}
+              >
+                W
+              </div>
               <p className="text-sm text-zinc-400">How can I help?</p>
-              <p className="text-[11px] text-zinc-600 mt-1">Transfer, payroll, escrow, or verify.</p>
+              <p className="text-[11px] text-zinc-600 mt-1">Try one of these or type your own.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-2 w-full max-w-[320px]">
+              {[
+                { icon: '→', text: 'Pay alice.whisper.eth 0.001 USDC privately', badge: '🔒' },
+                { icon: '◷', text: 'Run payroll: alice and bob — 0.001 USDC each', badge: '🔒' },
+                { icon: '⊡', text: 'Create escrow for alice: 0.01 USDC, release when ETH > $4k', badge: '🔒' },
+                { icon: '◈', text: 'Verify income for alice.whisper.eth', badge: '🔒' },
+              ].map((p, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendMessage(p.text)}
+                  disabled={isThinking}
+                  className="text-left rounded-lg border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.02)] px-3 py-2.5 text-[12px] text-zinc-400 hover:border-[rgba(200,216,255,0.15)] hover:text-zinc-300 hover:bg-[rgba(200,216,255,0.04)] transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  <span className="text-zinc-500 shrink-0">{p.icon}</span>
+                  <span className="truncate">{p.text}</span>
+                  <span className="ml-auto shrink-0 text-[10px]">{p.badge}</span>
+                </button>
+              ))}
             </div>
           </div>
         ) : (

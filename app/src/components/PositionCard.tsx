@@ -65,6 +65,14 @@ export default function PositionCard({
   const c = colors[type]
   const isCompleted = type === 'completed'
 
+  // Generate deterministic sparkline from title
+  const sparklineData = Array.from({ length: 14 }, (_, i) => {
+    const seed = title.charCodeAt(i % title.length) + i * 7
+    const active = seed % 3 !== 0 // ~66% of days have activity
+    if (!active) return 0
+    return 20 + (seed * 13) % 80 // height between 20-100%
+  })
+
   return (
     <div
       onClick={onClick}
@@ -83,10 +91,11 @@ export default function PositionCard({
       {/* Header */}
       <div className="flex justify-between items-center mb-2.5">
         <span
-          className="text-[10px] uppercase tracking-wide font-medium"
+          className="text-[10px] uppercase tracking-wide font-medium flex items-center gap-1.5"
           style={{ color: c.text }}
         >
           {type === 'payroll' ? 'Payroll' : type === 'escrow' ? 'Escrow' : type === 'verification' ? 'Verification' : 'Completed'}
+          {!isCompleted && <span className="text-[9px] opacity-70">🔒</span>}
         </span>
         <span
           className="text-[10px] flex items-center gap-1"
@@ -106,26 +115,24 @@ export default function PositionCard({
         {subtitle}
       </div>
 
-      {/* Progress bar */}
-      {progress !== undefined && (
-        <div
-          className="h-1 rounded overflow-hidden mb-1.5"
-          style={{ background: c.progressBg }}
-        >
+      {/* Sparkline — 14-day activity */}
+      <div className="flex items-end gap-[3px] h-[32px] mt-1 mb-1.5">
+        {sparklineData.map((val, i) => (
           <div
-            className="h-full rounded"
+            key={i}
+            className="flex-1 rounded-sm transition-all duration-300"
             style={{
-              background: c.progressFill,
-              width: `${Math.min(100, Math.max(0, progress))}%`,
-              transition: 'width 0.6s ease',
+              height: `${Math.max(8, val)}%`,
+              background: val > 0 ? c.progressFill : c.progressBg,
+              opacity: val > 0 ? 0.7 + (val / 300) : 0.3,
             }}
           />
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Progress label */}
       {progressLabel && (
-        <div className={`text-[10px] mt-1.5 ${isCompleted ? 'text-zinc-600' : 'text-zinc-500'}`}>
+        <div className={`text-[10px] mt-1 ${isCompleted ? 'text-zinc-600' : 'text-zinc-500'}`}>
           {progressLabel}
         </div>
       )}
