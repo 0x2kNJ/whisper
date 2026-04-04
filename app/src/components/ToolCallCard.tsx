@@ -53,6 +53,35 @@ interface ToolCallCardProps {
 
 const ZK_TOOLS = new Set(['private_transfer', 'private_swap'])
 
+function deriveSummary(name: string, input: Record<string, unknown>, result: string): string | null {
+  try {
+    const res = JSON.parse(result)
+    switch (name) {
+      case 'check_balance':
+        if (res.balances?.length > 0) {
+          return res.balances.map((b: {symbol: string, balance: string}) => `${b.symbol}: ${b.balance}`).join(', ')
+        }
+        return res.message || 'No balances found'
+      case 'private_transfer':
+        return `Sent ${input.amount} ${input.token} to ${String(input.recipient).slice(0, 8)}...`
+      case 'private_swap':
+        return `Swapped ${input.amount} ${input.tokenIn} → ${input.tokenOut}`
+      case 'get_quote':
+        return res.expectedOutput ? `${input.amount} ${input.tokenIn} → ${res.expectedOutput} ${input.tokenOut}` : null
+      case 'deposit_to_unlink':
+        return `Deposited ${input.amount} ${input.token} to privacy pool`
+      case 'create_escrow':
+        return `Escrow created: ${input.amount} ${input.token}`
+      case 'schedule_payroll':
+        return `Payroll scheduled: ${input.schedule}`
+      default:
+        return null
+    }
+  } catch {
+    return null
+  }
+}
+
 function runningLabel(name: string): string {
   if (ZK_TOOLS.has(name)) return 'Generating ZK proof...'
   return 'Executing...'
@@ -133,7 +162,7 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
         ) : isSuccess ? (
-          <span className="text-green-400 animate-pulse text-sm">✓</span>
+          <span className="text-green-400 text-sm" style={{animation: 'checkIn 200ms ease-out forwards'}}>✓</span>
         ) : isError ? (
           <span className="text-red-400 text-sm">✗</span>
         ) : (
@@ -160,6 +189,11 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
             {txHash.slice(0, 6)}...{txHash.slice(-4)} ↗
           </a>
         )}
+        {isSuccess && toolCall.duration && (
+          <span className="text-[10px] font-mono text-emerald-600">
+            Settled in {formatDuration(toolCall.duration)}
+          </span>
+        )}
         {!isRunning && toolCall.duration !== undefined && (
           <span className="text-xs text-zinc-600 font-mono">
             {formatDuration(toolCall.duration)}
@@ -175,6 +209,17 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
           </span>
         )}
       </div>
+
+      {/* Human-readable summary */}
+      {hasResult && (() => {
+        const summary = deriveSummary(toolCall.name, toolCall.input, toolCall.result)
+        if (!summary) return null
+        return (
+          <div className="border-t border-[#1a1a1a] px-4 py-2">
+            <p className="text-xs text-zinc-400">{summary}</p>
+          </div>
+        )
+      })()}
 
       {/* Input section */}
       {hasInput && (
@@ -219,6 +264,13 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
               </pre>
             </div>
           )}
+        </div>
+      )}
+      {isSuccess && ZK_TOOLS.has(toolCall.name) && (
+        <div className="border-t border-[#1a1a1a] px-4 py-2">
+          <a href="/privacy" className="text-[10px] text-[#c8d8ff]/50 hover:text-[#c8d8ff] transition-colors">
+            What does this look like on-chain? →
+          </a>
         </div>
       )}
     </div>

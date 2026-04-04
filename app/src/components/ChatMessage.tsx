@@ -108,7 +108,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               {formatText(message.text)}
             </div>
             {message.streaming && (
-              <span className="inline-block h-3 w-0.5 ml-0.5 bg-[#c8d8ff] animate-pulse" />
+              <span className="inline-block h-[1em] w-[1.5px] ml-0.5 align-middle bg-[#c8d8ff] cursor-blink" />
             )}
           </div>
         </div>

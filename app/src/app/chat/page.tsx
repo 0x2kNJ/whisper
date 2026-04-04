@@ -18,9 +18,9 @@ interface AgentHistoryMessage {
   content: string
 }
 
-function ThinkingIndicator() {
+function ThinkingIndicator({ visible }: { visible: boolean }) {
   return (
-    <div className="flex items-center gap-3 animate-fade-in">
+    <div className={`flex items-center gap-3 transition-all duration-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1'}`}>
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff]">
         W
       </div>
@@ -58,6 +58,8 @@ export default function ChatPage() {
   const [balancesLoading, setBalancesLoading] = useState(true)
 
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [thinkingVisible, setThinkingVisible] = useState(false)
+  const [sendPulse, setSendPulse] = useState(false)
 
   const fetchBalances = useCallback(async () => {
     try {
@@ -119,6 +121,15 @@ export default function ChatPage() {
     fetchBalances()
     fetchConversations()
   }, [fetchBalances, fetchConversations])
+
+  useEffect(() => {
+    if (isThinking) {
+      setThinkingVisible(true)
+    } else {
+      const t = setTimeout(() => setThinkingVisible(false), 200)
+      return () => clearTimeout(t)
+    }
+  }, [isThinking])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -380,6 +391,9 @@ export default function ChatPage() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!input.trim()) return
+    setSendPulse(true)
+    setTimeout(() => setSendPulse(false), 150)
     sendMessage(input)
   }
 
@@ -442,7 +456,11 @@ export default function ChatPage() {
                   W
                 </div>
                 <h1 className="text-xl font-semibold text-white mb-2">
-                  {wallet ? `Ready to move funds, ${wallet.slice(0, 6)}` : 'Whisper'}
+                  {wallet
+                    ? conversations.length > 0
+                      ? `Welcome back, ${wallet.slice(0, 6)}`
+                      : `Ready to move funds, ${wallet.slice(0, 6)}`
+                    : 'Whisper'}
                 </h1>
                 <p className="text-sm text-zinc-500 leading-relaxed">
                   {wallet
@@ -464,13 +482,23 @@ export default function ChatPage() {
                 })().map((prompt, i) => (
                   <button
                     key={i}
-                    onClick={() => sendMessage(prompt)}
+                    onClick={() => { setInput(prompt); inputRef.current?.focus() }}
                     disabled={isThinking}
                     className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3 text-left text-xs text-zinc-400 hover:border-[#333] hover:text-zinc-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {prompt}
                   </button>
                 ))}
+              </div>
+              <div className="flex flex-col items-center gap-2 mt-4">
+                <p className="text-[11px] text-zinc-600 max-w-sm">
+                  Natural language treasury. Every transfer is shielded with a ZK proof only you can verify.
+                </p>
+                <div className="flex gap-4 mt-1">
+                  <a href="/privacy" className="text-[10px] text-[#c8d8ff]/50 hover:text-[#c8d8ff] transition-colors">
+                    See how privacy works →
+                  </a>
+                </div>
               </div>
             </div>
           ) : (
@@ -479,13 +507,13 @@ export default function ChatPage() {
                 <ChatMessage key={msg.id} message={msg} />
               ))}
 
-              {isThinking &&
+              {(isThinking || thinkingVisible) &&
                 !messages.find(
                   (m) =>
                     m.role === 'assistant' &&
                     m.streaming &&
                     (m.text || (m.toolCalls && m.toolCalls.length > 0)),
-                ) && <ThinkingIndicator />}
+                ) && <ThinkingIndicator visible={isThinking} />}
 
               <div ref={bottomRef} />
             </div>
@@ -514,7 +542,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={!input.trim() || isThinking}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#222] bg-[#0a0a0a] text-[#c8d8ff] transition-all hover:border-[#333] hover:bg-[#111] disabled:opacity-40 disabled:cursor-not-allowed"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#222] bg-[#0a0a0a] text-[#c8d8ff] transition-all hover:border-[#333] hover:bg-[#111] disabled:opacity-40 disabled:cursor-not-allowed ${sendPulse ? 'scale-95 opacity-60' : ''}`}
               aria-label="Send message"
             >
               {isThinking ? (
