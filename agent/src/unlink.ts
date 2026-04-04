@@ -403,13 +403,14 @@ export async function execute(
       value: c.value ?? '0',
     }))
 
-    // Build outputs. The API requires npk (nullifier public key) as decimal string.
+    // Build outputs. The API requires npk and recipient_address.
     // The backend resolves the actual npk from the unlinkAddress provided above,
     // so we pass "0" as a placeholder — it is overridden server-side.
     const outputs = params.outputs.map((o) => ({
       npk: '0', // backend resolves from unlinkAddress
       token: o.token as Address,
       min_amount: toRawAmount(o.minAmount, o.token),
+      recipient_address: (o as { recipientAddress?: string }).recipientAddress || unlinkAddress,
     }))
 
     // Step 1: Prepare execute via low-level API client

@@ -75,6 +75,7 @@ export type ToolName =
   | 'pause_strategy'
   | 'resume_strategy'
   | 'edit_strategy'
+  | 'batch_private_transfer'
   | 'private_cross_chain_transfer'
   | 'encrypt_payroll_message'
   | 'decrypt_payroll_message'
