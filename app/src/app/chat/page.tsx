@@ -398,6 +398,7 @@ export default function ChatPage() {
       <div className="flex flex-1 flex-col min-w-0">
         <header className="flex items-center justify-between border-b border-[#111] px-6 py-4 shrink-0">
           <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
             <button
               onClick={() => setSidebarOpen(true)}
               className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg border border-[#222] bg-[#0a0a0a] text-zinc-400 hover:text-white transition-colors"
@@ -406,29 +407,26 @@ export default function ChatPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
+            {/* Back arrow — visible when in a conversation */}
+            {messages.length > 0 && (
+              <button
+                onClick={handleNewChat}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-white transition-colors"
+                title="Back to start"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+              </button>
+            )}
             <div>
               <span className="text-sm font-medium text-white">Treasury Agent</span>
               <span className="ml-2 text-xs text-zinc-600">Base Sepolia</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Home button — back to prompts */}
-            {messages.length > 0 && (
-              <button
-                onClick={handleNewChat}
-                className="flex items-center gap-1.5 rounded-lg border border-[#222] bg-[#0a0a0a] px-3 py-1.5 text-[10px] text-zinc-400 hover:text-white hover:border-[#444] transition-colors"
-                title="Back to start"
-              >
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                </svg>
-                Home
-              </button>
-            )}
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              <span className="text-xs text-zinc-600">Online</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="text-xs text-zinc-600">Online</span>
           </div>
         </header>
 
