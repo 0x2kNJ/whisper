@@ -39,12 +39,12 @@ export async function GET(
     ]
 
     const textRecords: Record<string, string> = {}
-    for (const key of recordKeys) {
-      try {
-        const value = await client.getEnsText({ name: normalizedName, key })
-        if (value) textRecords[key] = value
-      } catch {
-        // Skip
+    const results = await Promise.allSettled(
+      recordKeys.map((key) => client.getEnsText({ name: normalizedName, key }).then((value) => ({ key, value }))),
+    )
+    for (const result of results) {
+      if (result.status === 'fulfilled' && result.value.value) {
+        textRecords[result.value.key] = result.value.value
       }
     }
 
