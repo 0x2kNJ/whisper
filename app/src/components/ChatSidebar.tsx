@@ -77,10 +77,19 @@ export default function ChatSidebar({
   const groups = useMemo(() => groupByDate(conversations), [conversations])
 
   const prevBalancesRef = useRef<BalanceInfo[]>([])
+  const initialLoadRef = useRef(true)
   const [deltas, setDeltas] = useState<Record<string, { amount: string; direction: 'up' | 'down' }>>({})
 
   useEffect(() => {
     const prev = prevBalancesRef.current
+    // Skip delta calculation on initial load(s)
+    if (initialLoadRef.current) {
+      if (balances.length > 0) {
+        prevBalancesRef.current = balances
+        initialLoadRef.current = false
+      }
+      return
+    }
     if (prev.length > 0 && balances.length > 0) {
       const newDeltas: Record<string, { amount: string; direction: 'up' | 'down' }> = {}
       for (const b of balances) {
@@ -108,7 +117,7 @@ export default function ChatSidebar({
       {/* Header: Logo + New Chat */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/[0.06]">
         <Link href="/dashboard" className="flex items-center gap-2.5 group" title="Back to Dashboard">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff] group-hover:border-[#c8d8ff]/30 transition-colors">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff] group-hover:border-[#c8d8ff]/30 transition-colors" style={{boxShadow: '0 0 15px rgba(200,216,255,0.08)'}}>
             W
           </div>
           <span className="text-sm font-semibold tracking-wide text-white">Whisper</span>
@@ -134,8 +143,11 @@ export default function ChatSidebar({
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto px-3 py-3">
         {groups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-zinc-600 text-xs">
-            No conversations yet
+          <div className="flex flex-col items-center justify-center h-32 gap-2">
+            <svg className="h-6 w-6 text-[#c8d8ff]/20 animate-pulse-slow" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
+            <span className="text-zinc-700 text-[10px]">No conversations yet</span>
           </div>
         ) : (
           groups.map((group) => (

@@ -78,7 +78,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   if (isUser) {
     return (
       <div className="flex justify-end animate-fade-in">
-        <div className="max-w-[75%] rounded-2xl rounded-tr-sm bg-[#1a1a1a] border border-[#2a2a2a] px-4 py-3 text-sm text-white leading-relaxed">
+        <div className="max-w-[75%] rounded-2xl rounded-tr-sm bg-gradient-to-br from-[#1a1a1a] to-[#151520] border border-[#2a2a2a] px-4 py-3 text-sm text-white leading-relaxed">
           {message.text}
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       {message.text && (
         <div className="flex items-start gap-3">
           {/* Whisper avatar */}
-          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff]">
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff] hover:border-[#c8d8ff]/30 transition-all" style={{boxShadow: '0 0 12px rgba(200,216,255,0.06)'}}>
             W
           </div>
           <div className="flex-1 min-w-0">
