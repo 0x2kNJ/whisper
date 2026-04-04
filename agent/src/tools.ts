@@ -1472,7 +1472,9 @@ export async function executeTool(
         }
 
         const client = getUnlinkClient()
-        const tokenAddress = strategy.token || baseSepolia.tokens.USDC.address
+        // Resolve token symbol to address
+        const tokenSymbol = strategy.token || 'USDC'
+        const tokenAddress = resolveToken(tokenSymbol).address
         const results: Array<{ name: string; amount: string; success: boolean; txHash?: string; error?: string }> = []
 
         // Execute transfers sequentially with retry
