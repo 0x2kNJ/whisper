@@ -83,7 +83,10 @@ export async function resolveENS(name: string): Promise<{
     // Read text records — prioritize unlink.address for privacy
     const textRecords: Record<string, string> = {}
     const recordKeys = [
-      'unlink.address',     // Priority: ZK-shielded Unlink address
+      'unlink.address',         // Priority: ZK-shielded Unlink address
+      'payroll.proof',          // ZK proof hash from last payroll
+      'payroll.timestamp',      // When last payroll was executed
+      'payroll.verified',       // Whether proof has been verified
       'description',
       'url',
       'ai.model',

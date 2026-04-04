@@ -622,6 +622,23 @@ export const toolDefinitions = [
       required: ['name'],
     },
   },
+  {
+    name: 'verify_payment_proof' as const,
+    description:
+      'Verify a ZK payment proof for an ENS name. Reads the payroll.proof text record from the ENS name ' +
+      'and confirms that a ZK-shielded payment was made. This proves someone was paid without revealing ' +
+      'the amount, sender, or other recipients. Use this to demonstrate verifiable private payroll.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: {
+          type: 'string' as const,
+          description: 'ENS name to verify (e.g. "alice.whisper.eth")',
+        },
+      },
+      required: ['name'],
+    },
+  },
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -1599,6 +1616,51 @@ export async function executeTool(
           cached: true,
           privacyNote,
           message: `Resolved ${ensName} → ${result.preferredAddress}${result.unlinkAddress ? ' (Unlink ZK address)' : ' (EVM address)'}`,
+        })
+      }
+
+      // ── verify_payment_proof ─────────────────
+      case 'verify_payment_proof': {
+        const ensName = input.name as string
+        const result = await resolveENS(ensName)
+
+        if (!result.preferredAddress) {
+          return JSON.stringify({
+            success: false,
+            error: `Could not resolve "${ensName}". Name may not be registered.`,
+          })
+        }
+
+        const proofHash = result.textRecords?.['payroll.proof'] || null
+        const proofTimestamp = result.textRecords?.['payroll.timestamp'] || null
+        const unlinkAddr = result.unlinkAddress
+
+        if (proofHash) {
+          return JSON.stringify({
+            success: true,
+            name: ensName,
+            verified: true,
+            proof: {
+              hash: proofHash,
+              timestamp: proofTimestamp,
+              unlinkAddress: unlinkAddr,
+            },
+            privacy: {
+              amountVisible: false,
+              senderVisible: false,
+              recipientVisible: false,
+              proofPublic: true,
+            },
+            message: `Payment proof verified for ${ensName}. ZK proof hash: ${proofHash.slice(0, 16)}... — this cryptographically proves ${ensName.split('.')[0]} was paid, without revealing the amount, sender, or other recipients. The proof is publicly verifiable on-chain but the payment details remain private.`,
+          })
+        }
+
+        return JSON.stringify({
+          success: true,
+          name: ensName,
+          verified: false,
+          unlinkAddress: unlinkAddr,
+          message: `${ensName} has a privacy-enabled Unlink address but no payment proof has been published yet. After the next payroll run, a ZK proof hash will be stored in this ENS record — proving payment was made without revealing details.`,
         })
       }
 

@@ -84,3 +84,4 @@ export type ToolName =
   | 'lookup_contact'
   | 'list_contacts'
   | 'resolve_ens'
+  | 'verify_payment_proof'
