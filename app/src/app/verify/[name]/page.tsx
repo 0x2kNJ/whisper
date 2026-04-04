@@ -92,12 +92,12 @@ export default function VerifyPage() {
                   </svg>
                 )}
                 <h1 className={`text-lg font-semibold ${result.isVerified ? 'text-green-400' : 'text-[#c8d8ff]'}`}>
-                  {result.isVerified ? 'Payment Verified' : 'Privacy-Enabled Account'}
+                  {result.isVerified ? 'Income Verified' : 'Income Not Yet Verified'}
                 </h1>
                 <p className="text-xs text-zinc-500 mt-1">
                   {result.isVerified
-                    ? 'ZK-verified proof of payment on Ethereum'
-                    : 'Registered for private ZK-shielded payments'}
+                    ? `${capitalName} was paid by ${result.payroll.payer || 'whisper.eth'} in ${result.payroll.period || 'April 2026'}`
+                    : 'No payment proof has been published for this account yet'}
                 </p>
               </div>
 
