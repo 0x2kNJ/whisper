@@ -212,6 +212,9 @@ export default function ChatSidebar({
         )}
 
         {/* Balance cards */}
+        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">
+          Private Balances
+        </div>
         <div className="flex flex-col gap-2">
           {balancesLoading && balances.length === 0 ? (
             <div className="flex items-center justify-center py-4">
@@ -238,9 +241,14 @@ export default function ChatSidebar({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <div className="h-1 w-1 rounded-full bg-[#c8d8ff] animate-pulse opacity-50" />
-                    <span className="text-[9px] text-[#c8d8ff]/50">Shielded</span>
+                  <div className="flex items-center justify-between mt-1">
+                    <div className="flex items-center gap-1">
+                      <div className="h-1 w-1 rounded-full bg-[#c8d8ff] animate-pulse opacity-50" />
+                      <span className="text-[9px] text-[#c8d8ff]/50">ZK Shielded</span>
+                    </div>
+                    <span className="text-[8px] font-mono text-zinc-700">
+                      {b.tokenAddress.slice(0, 6)}...{b.tokenAddress.slice(-4)}
+                    </span>
                   </div>
                 </div>
               )

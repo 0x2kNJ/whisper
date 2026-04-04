@@ -53,21 +53,21 @@ export async function GET() {
       ),
     ]
 
-    const balances = rawBalances.map(
+    const balances = rawBalances
+      .filter((b: { symbol: string }) => {
+        // Filter out unrecognized pool tokens — only show tokens we can identify
+        return b.symbol !== 'UNKNOWN'
+      })
+      .map(
       (b: { token: string; symbol: string; balance: string }) => {
         const matched = allTokens.find(
           (t) => t.address.toLowerCase() === b.token.toLowerCase(),
         )
 
-        // Unlink pool tokens have internal addresses that don't match config.
-        // If unmatched, default to "USDC" on "Base Sepolia" (the primary pool token).
-        const symbol = matched?.symbol ?? (b.symbol !== 'UNKNOWN' ? b.symbol : 'USDC')
-        const chain = matched?.chain ?? 'Base Sepolia'
-
         return {
-          symbol,
+          symbol: matched?.symbol ?? b.symbol,
           balance: b.balance,
-          chain,
+          chain: matched?.chain ?? 'Base Sepolia',
           tokenAddress: b.token,
           explorerUrl: matched?.explorer ?? null,
         }
