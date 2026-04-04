@@ -188,6 +188,11 @@ export default function DashboardPage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                 Base Sepolia
               </span>
+              <span className="text-[#222]">·</span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                Arc Testnet
+              </span>
             </div>
           </div>
 
@@ -212,6 +217,10 @@ export default function DashboardPage() {
 
         {/* Quick Actions */}
         <div className="px-4 sm:px-7 pb-5 pt-2">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Quick Actions</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-[rgba(200,216,255,0.06)] text-[rgba(200,216,255,0.5)] border border-[rgba(200,216,255,0.1)]">All private via Unlink</span>
+          </div>
           <QuickActions onAction={handleAction} />
         </div>
 

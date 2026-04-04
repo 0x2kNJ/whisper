@@ -13,6 +13,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       <IconRail
         activePath={pathname}
         onChatToggle={() => (chatOpen ? closeChat() : openChat())}
+        onOpenChatWithPrompt={(prompt) => openChat(prompt)}
         isChatOpen={chatOpen}
       />
       <main className="flex-1 overflow-hidden">
