@@ -1377,7 +1377,8 @@ export async function executeTool(
               { to: usdcAddress, data: approveCalldata },
               { to: CCTP_TOKEN_MESSENGER, data: cctpCalldata },
             ],
-            outputs: [], // no outputs — USDC is burned, not returned to pool
+            // CCTP burns USDC so nothing returns to pool, but API requires non-empty outputs
+            outputs: [{ token: usdcAddress, minAmount: '0' }],
             deadline,
           })
 
