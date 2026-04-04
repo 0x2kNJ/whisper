@@ -10,6 +10,35 @@ export interface ChatMessageData {
   streaming?: boolean
 }
 
+/** Format inline text: bold, links, newlines */
+function formatInline(text: string, keyPrefix: string): React.ReactNode {
+  if (!text) return null
+  return text.split('\n').map((line, j, arr) => {
+    // Parse bold + links
+    const formatted = line.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g).map((seg, k) => {
+      if (seg.startsWith('**') && seg.endsWith('**')) {
+        return <strong key={k} className="font-semibold text-white">{seg.slice(2, -2)}</strong>
+      }
+      // Markdown link: [text](url)
+      const linkMatch = seg.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+      if (linkMatch) {
+        return (
+          <a key={k} href={linkMatch[2]} className="text-[#c8d8ff] hover:underline transition-colors">
+            {linkMatch[1]}
+          </a>
+        )
+      }
+      return seg
+    })
+    return (
+      <span key={`${keyPrefix}-${j}`}>
+        {formatted}
+        {j < arr.length - 1 && <br />}
+      </span>
+    )
+  })
+}
+
 function formatText(text: string): React.ReactNode {
   if (!text) return null
 
@@ -46,25 +75,56 @@ function formatText(text: string): React.ReactNode {
       )
     }
 
-    // Regular text — handle bold and newlines
-    return part.split('\n').map((line, j, arr) => {
-      const formatted = line.split(/(\*\*[^*]+\*\*)/g).map((seg, k) => {
-        if (seg.startsWith('**') && seg.endsWith('**')) {
-          return (
-            <strong key={k} className="font-semibold text-white">
-              {seg.slice(2, -2)}
-            </strong>
-          )
-        }
-        return seg
-      })
+    // Check if this chunk contains a markdown table
+    const lines = part.split('\n')
+    const tableStart = lines.findIndex((l) => l.trim().startsWith('|') && l.trim().endsWith('|'))
+    if (tableStart >= 0) {
+      // Find table extent
+      const tableLines: string[] = []
+      const beforeLines: string[] = lines.slice(0, tableStart)
+      let idx = tableStart
+      while (idx < lines.length && lines[idx].trim().startsWith('|')) {
+        tableLines.push(lines[idx])
+        idx++
+      }
+      const afterLines = lines.slice(idx)
+
+      // Parse table
+      const headerRow = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) || []
+      const dataRows = tableLines.slice(2).map((row) => row.split('|').filter(Boolean).map((c) => c.trim()))
+
       return (
-        <span key={`${i}-${j}`}>
-          {formatted}
-          {j < arr.length - 1 && <br />}
+        <span key={i}>
+          {beforeLines.length > 0 && formatInline(beforeLines.join('\n'), `${i}-before`)}
+          <table className="my-2 w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                {headerRow.map((h, hi) => (
+                  <th key={hi} className="text-left text-zinc-500 font-medium px-2 py-1.5 border-b border-[#222]">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataRows.map((row, ri) => (
+                <tr key={ri}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="text-zinc-300 px-2 py-1.5 border-b border-[#1a1a1a]">
+                      {formatInline(cell, `${i}-${ri}-${ci}`)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {afterLines.length > 0 && formatInline(afterLines.join('\n'), `${i}-after`)}
         </span>
       )
-    })
+    }
+
+    // Regular text — handle bold, links, and newlines
+    return formatInline(part, String(i))
   })
 }
 

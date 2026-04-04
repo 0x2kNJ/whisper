@@ -925,13 +925,11 @@ export async function executeTool(
 
             return JSON.stringify({
               success: true,
-              txHash: result.txHash,
-              status: result.status,
               recipient: input.recipient,
               amount: input.amount,
               token: input.token,
-              message: `Privately transferred ${input.amount} ${input.token} to ${input.recipient}. Transaction ${result.status === 'submitted' ? 'submitted to relayer' : 'confirmed on-chain'}.`,
-              ...(attempt > 0 ? { retried: true } : {}),
+              verifyUrl: `/verify/${String(input.recipient).endsWith('.eth') ? input.recipient : String(input.recipient).toLowerCase() + '.whisper.eth'}`,
+              message: `Privately transferred ${input.amount} ${input.token} to ${input.recipient}. ZK-shielded via Unlink.`,
             })
           } catch (err) {
             if (attempt === 0) {
@@ -1475,7 +1473,7 @@ export async function executeTool(
         // Resolve token symbol to address
         const tokenSymbol = strategy.token || 'USDC'
         const tokenAddress = resolveToken(tokenSymbol).address
-        const results: Array<{ name: string; amount: string; success: boolean; txHash?: string; error?: string }> = []
+        const results: Array<{ name: string; amount: string; success: boolean; verifyUrl?: string; error?: string }> = []
 
         // Execute transfers sequentially with retry
         for (const recipient of strategy.recipients) {
@@ -1494,7 +1492,9 @@ export async function executeTool(
                 amount: recipient.amount,
                 skipPolling: true,
               })
-              results.push({ name: recipient.name || addr, amount: recipient.amount, success: true, txHash: result.txHash })
+              const displayName = recipient.name || addr
+              const ensName = displayName.toLowerCase().endsWith('.eth') ? displayName : `${displayName.toLowerCase()}.whisper.eth`
+              results.push({ name: displayName, amount: recipient.amount, success: true, verifyUrl: `/verify/${ensName}` })
               break
             } catch (err) {
               if (attempt === 0) {
@@ -1520,10 +1520,7 @@ export async function executeTool(
             recipientCount: results.length,
             successCount: succeeded,
           },
-          results: results.map((r) => ({
-            ...r,
-            explorerUrl: r.txHash ? `https://sepolia.basescan.org/tx/${r.txHash}` : null,
-          })),
+          results,
           summary: `${succeeded}/${results.length} payments executed privately via Unlink`,
           message: `Payroll "${strategy.name}" complete: ${succeeded}/${results.length} paid, ${totalPaid.toFixed(4)} USDC total.`,
         })
