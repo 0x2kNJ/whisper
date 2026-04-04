@@ -42,7 +42,12 @@ Upgrade the Whisper treasury agent chat page with three improvements:
 
 **Balance display:**
 - Compact cards in sidebar bottom section
-- Brief opacity fade animation when values refresh
+- **Animated count-up** when values change — numbers roll from old value to new value (CSS transition on a counter or lightweight JS interpolation, ~400ms ease-out)
+- Each balance card links to the block explorer token page (clickable, opens in new tab):
+  - Base Sepolia: `https://sepolia.basescan.org/token/{tokenAddress}`
+  - Arc Testnet: explorer URL TBD (add to agent config)
+- **Chain badge prominent on each card** — not buried as subtext. Pill-shaped badge with chain name, styled like the testnet badge in the header. Judges need to see at a glance this is hitting real testnets.
+- **ZK shield badge** — "Shielded via ZK Proofs" badge displayed prominently at the top of the balance section (not buried in a footer). Pill/badge style with a lock icon and subtle accent glow. This is the differentiator — it should be one of the first things a judge reads.
 
 ## Chat History — SQLite
 
@@ -89,6 +94,8 @@ CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at);
 
 **Title generation:** First user message, truncated to 50 chars with ellipsis. No LLM summarization.
 
+**List grouping:** Conversations grouped by date — "Today", "Yesterday", "Previous 7 Days", "Older". Group headers are small uppercase labels (`text-[10px] uppercase tracking-widest text-zinc-600`).
+
 ## Glass UI Design
 
 **Principle:** Glass on the sidebar only. Chat area stays deep black. One frosted surface against dark background creates depth.
@@ -119,8 +126,9 @@ CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at);
 
 **Micro-animations:**
 - All sidebar items: `transition-all duration-200`
-- Balance refresh: brief opacity dip on value change
+- **Balance count-up:** When balance values change (after agent `done` event triggers a refetch), numbers animate from old -> new value over ~400ms with ease-out. Uses CSS `transition` on a displayed value interpolated via `requestAnimationFrame`. The key demo moment — user sends a private transfer, sidebar balance ticks down in real-time.
 - New conversation: `animate-slide-up`
+- Balance card hover: subtle border glow transition
 
 **Unchanged:** Space Grotesk font, `#c8d8ff` accent, message formatting, tool call cards, input bar, thinking indicator.
 
