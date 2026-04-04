@@ -856,9 +856,22 @@ export async function executeTool(
         const tokenInfo = resolveToken(input.token as string)
         const client = getUnlinkClient()
 
+        // Resolve recipient: if it's a name (not an address), look up from address book
+        let recipientAddress = input.recipient as string
+        if (!recipientAddress.startsWith('unlink1') && !recipientAddress.startsWith('0x')) {
+          const resolved = getAddress(recipientAddress)
+          if (!resolved) {
+            return JSON.stringify({
+              success: false,
+              error: `Contact "${recipientAddress}" not found in address book. Use list_contacts to see available contacts.`,
+            })
+          }
+          recipientAddress = resolved
+        }
+
         const result = await transfer(client, {
           token: tokenInfo.address,
-          recipientAddress: input.recipient as string,
+          recipientAddress,
           amount: input.amount as string,
         })
 
