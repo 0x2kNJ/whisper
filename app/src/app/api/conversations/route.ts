@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { listConversations, createConversation } from '@/lib/db'
+import { listConversationsWithStats, createConversation } from '@/lib/db'
 
 export async function GET() {
-  const conversations = listConversations()
+  const conversations = listConversationsWithStats()
   return NextResponse.json({ conversations })
 }
 

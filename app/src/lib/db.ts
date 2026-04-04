@@ -56,6 +56,47 @@ export function listConversations(): Array<{
     .all() as Array<{ id: string; title: string; created_at: number; updated_at: number }>
 }
 
+export function listConversationsWithStats(): Array<{
+  id: string
+  title: string
+  created_at: number
+  updated_at: number
+  txCount: number
+  usdcMoved: number
+}> {
+  const db = getDb()
+  const convs = db
+    .prepare('SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC')
+    .all() as Array<{ id: string; title: string; created_at: number; updated_at: number }>
+
+  return convs.map((conv) => {
+    const messages = db
+      .prepare('SELECT tool_calls FROM messages WHERE conversation_id = ? AND role = ?')
+      .all(conv.id, 'assistant') as Array<{ tool_calls: string }>
+
+    let txCount = 0
+    let usdcMoved = 0
+
+    for (const msg of messages) {
+      try {
+        const tools = JSON.parse(msg.tool_calls)
+        for (const tc of tools) {
+          if (['private_transfer', 'private_swap', 'deposit_to_unlink'].includes(tc.name)) {
+            txCount++
+            // Try to extract amount from input
+            if (tc.input?.amount) {
+              const amount = parseFloat(tc.input.amount)
+              if (!isNaN(amount)) usdcMoved += amount
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return { ...conv, txCount, usdcMoved }
+  })
+}
+
 export function createConversation(title: string): { id: string; title: string } {
   const db = getDb()
   const id = randomUUID()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import Link from 'next/link'
 import AnimatedBalance from './AnimatedBalance'
 
@@ -9,6 +9,8 @@ export interface ConversationSummary {
   title: string
   created_at: number
   updated_at: number
+  txCount?: number
+  usdcMoved?: number
 }
 
 export interface BalanceInfo {
@@ -74,6 +76,33 @@ export default function ChatSidebar({
 }: ChatSidebarProps) {
   const groups = useMemo(() => groupByDate(conversations), [conversations])
 
+  const prevBalancesRef = useRef<BalanceInfo[]>([])
+  const [deltas, setDeltas] = useState<Record<string, { amount: string; direction: 'up' | 'down' }>>({})
+
+  useEffect(() => {
+    const prev = prevBalancesRef.current
+    if (prev.length > 0 && balances.length > 0) {
+      const newDeltas: Record<string, { amount: string; direction: 'up' | 'down' }> = {}
+      for (const b of balances) {
+        const old = prev.find((p) => p.symbol === b.symbol && p.chain === b.chain)
+        if (old && old.balance !== b.balance) {
+          const diff = parseFloat(b.balance) - parseFloat(old.balance)
+          if (diff !== 0) {
+            newDeltas[`${b.symbol}-${b.chain}`] = {
+              amount: `${diff > 0 ? '+' : ''}${diff.toFixed(diff < 1 && diff > -1 ? 4 : 2)}`,
+              direction: diff > 0 ? 'up' : 'down',
+            }
+          }
+        }
+      }
+      if (Object.keys(newDeltas).length > 0) {
+        setDeltas(newDeltas)
+        setTimeout(() => setDeltas({}), 3000)
+      }
+    }
+    prevBalancesRef.current = balances
+  }, [balances])
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Header: Logo + New Chat */}
@@ -126,6 +155,12 @@ export default function ChatSidebar({
                   >
                     {conv.title}
                   </button>
+                  {conv.txCount && conv.txCount > 0 ? (
+                    <div className="px-3 -mt-1 mb-1 text-[9px] text-zinc-600 font-mono">
+                      {conv.txCount} txn{conv.txCount > 1 ? 's' : ''}
+                      {conv.usdcMoved ? ` · ${conv.usdcMoved.toFixed(2)} USDC` : ''}
+                    </div>
+                  ) : null}
                   <button
                     onClick={(e) => { e.stopPropagation(); onDeleteConversation(conv.id) }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity text-xs p-1"
@@ -182,6 +217,18 @@ export default function ChatSidebar({
                     <span className="inline-flex items-center rounded-full bg-white/[0.04] border border-white/[0.06] px-1.5 py-0.5 text-[9px] font-medium text-zinc-400 tracking-wide">
                       {b.chain}
                     </span>
+                    {/* Delta indicator */}
+                    {deltas[`${b.symbol}-${b.chain}`] && (
+                      <span className={`ml-auto text-[10px] font-mono animate-fade-in ${
+                        deltas[`${b.symbol}-${b.chain}`].direction === 'up' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {deltas[`${b.symbol}-${b.chain}`].amount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <div className="h-1 w-1 rounded-full bg-[#c8d8ff] animate-pulse opacity-50" />
+                    <span className="text-[9px] text-[#c8d8ff]/50">Shielded</span>
                   </div>
                 </div>
               )

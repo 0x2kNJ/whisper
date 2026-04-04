@@ -179,3 +179,99 @@ body {
 .animate-slide-in-left {
   animation: slideInLeft 0.2s ease-out;
 }
+
+/* Tool call success burst */
+@keyframes tool-burst {
+  0% {
+    transform: scale(0);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Input breathing glow when processing */
+@keyframes inputBreathing {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(200, 216, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(200, 216, 255, 0.25);
+  }
+}
+
+.input-breathing {
+  animation: inputBreathing 1.5s ease-in-out infinite;
+}
+
+/* Thinking text shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.thinking-shimmer {
+  background: linear-gradient(90deg, #71717a, #c8d8ff, #71717a);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Thinking indicator exit transition */
+.thinking-exit {
+  transition: all 0.2s ease-out;
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* Success celebration burst */
+@keyframes celebrationBurst {
+  0% {
+    transform: scale(0);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.celebration-burst {
+  animation: celebrationBurst 0.6s ease-out forwards;
+}
+
+/* Success glow on tool card */
+@keyframes successGlow {
+  0% {
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(74, 222, 128, 0);
+  }
+}
+
+.success-glow {
+  animation: successGlow 0.8s ease-out forwards;
+}
+
+/* Balance flash on update */
+@keyframes balanceFlash {
+  0% {
+    text-shadow: 0 0 30px rgba(200, 216, 255, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 20px rgba(200, 216, 255, 0.15);
+  }
+}
+
+.balance-flash {
+  animation: balanceFlash 0.8s ease-out;
+}

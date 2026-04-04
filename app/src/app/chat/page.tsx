@@ -25,7 +25,7 @@ function ThinkingIndicator() {
         W
       </div>
       <div className="flex items-center gap-1.5 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5">
-        <span className="text-xs text-zinc-500 mr-1">Whisper is thinking</span>
+        <span className="text-xs thinking-shimmer mr-1">Whisper is thinking</span>
         <span className="thinking-dot h-1 w-1 rounded-full bg-[#c8d8ff]" />
         <span className="thinking-dot h-1 w-1 rounded-full bg-[#c8d8ff]" />
         <span className="thinking-dot h-1 w-1 rounded-full bg-[#c8d8ff]" />
@@ -263,13 +263,32 @@ export default function ChatPage() {
             } else if (eventType === 'tool_call') {
               const tc = parsed as ToolCallInfo
               finalToolCalls.push(tc)
+              // Show running state first, then transition to completed
+              const runningTc = { ...tc, result: '', duration: undefined, status: 'running' as const }
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
-                    ? { ...m, toolCalls: [...(m.toolCalls ?? []), tc] }
+                    ? { ...m, toolCalls: [...(m.toolCalls ?? []), runningTc] }
                     : m,
                 ),
               )
+              // After brief delay, show completed state
+              setTimeout(() => {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId
+                      ? {
+                          ...m,
+                          toolCalls: (m.toolCalls ?? []).map((t) =>
+                            t.name === tc.name && t.timestamp === tc.timestamp
+                              ? { ...tc, status: 'done' as const }
+                              : t,
+                          ),
+                        }
+                      : m,
+                  ),
+                )
+              }, 400)
             } else if (eventType === 'done') {
               const { response, toolCalls } = parsed as {
                 response: string
@@ -399,9 +418,14 @@ export default function ChatPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
-            <div>
+            <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-white">Treasury Agent</span>
-              <span className="ml-2 text-xs text-zinc-600">Base Sepolia</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(200,216,255,0.08)] border border-[rgba(200,216,255,0.15)] px-2 py-0.5 text-[9px] font-medium text-[#c8d8ff] tracking-wide">
+                <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+                </svg>
+                ZK Shielded
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -417,15 +441,27 @@ export default function ChatPage() {
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-lg font-bold tracking-widest text-[#c8d8ff]">
                   W
                 </div>
-                <h1 className="text-xl font-semibold text-white mb-2">Whisper</h1>
+                <h1 className="text-xl font-semibold text-white mb-2">
+                  {wallet ? `Ready to move funds, ${wallet.slice(0, 6)}` : 'Whisper'}
+                </h1>
                 <p className="text-sm text-zinc-500 leading-relaxed">
-                  Your private AI treasury agent. All transactions are shielded
-                  with zero-knowledge proofs on Base Sepolia.
+                  {wallet
+                    ? 'Everything here is private. Nothing on-chain until you confirm.'
+                    : 'Your private AI treasury agent. All transactions are shielded with zero-knowledge proofs.'}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
-                {SUGGESTED_PROMPTS.map((prompt, i) => (
+                {(() => {
+                  const totalUsdc = balances.reduce((sum, b) => b.symbol === 'USDC' ? sum + parseFloat(b.balance) : sum, 0)
+                  const dynamicPrompts = [
+                    totalUsdc > 0
+                      ? `Run payroll from your ${totalUsdc.toFixed(1)} USDC — pay Alice, Bob, Charlie privately`
+                      : SUGGESTED_PROMPTS[0],
+                    ...SUGGESTED_PROMPTS.slice(1),
+                  ]
+                  return dynamicPrompts
+                })().map((prompt, i) => (
                   <button
                     key={i}
                     onClick={() => sendMessage(prompt)}
@@ -470,7 +506,7 @@ export default function ChatPage() {
                 placeholder="Ask Whisper anything..."
                 disabled={isThinking}
                 rows={1}
-                className="w-full resize-none overflow-hidden rounded-xl border border-[#222] bg-[#0a0a0a] px-4 py-3 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-[#333] disabled:opacity-60 disabled:cursor-not-allowed leading-relaxed"
+                className={`w-full resize-none overflow-hidden rounded-xl border border-[#222] bg-[#0a0a0a] px-4 py-3 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-[#333] disabled:cursor-not-allowed leading-relaxed ${isThinking ? 'input-breathing disabled:opacity-80' : ''}`}
                 style={{ minHeight: '44px', maxHeight: '160px' }}
               />
             </div>
