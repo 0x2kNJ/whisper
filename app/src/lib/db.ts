@@ -142,6 +142,31 @@ export function deleteConversation(id: string): boolean {
   return result.changes > 0
 }
 
+export function getAssistantMessagesWithToolCalls(sinceMs?: number): Array<{
+  id: string
+  tool_calls: string
+  created_at: number
+}> {
+  const db = getDb()
+  if (sinceMs) {
+    return db
+      .prepare(
+        `SELECT id, tool_calls, created_at FROM messages
+         WHERE role = 'assistant' AND tool_calls != '[]' AND created_at >= ?
+         ORDER BY created_at DESC`
+      )
+      .all(sinceMs) as Array<{ id: string; tool_calls: string; created_at: number }>
+  }
+  return db
+    .prepare(
+      `SELECT id, tool_calls, created_at FROM messages
+       WHERE role = 'assistant' AND tool_calls != '[]'
+       ORDER BY created_at DESC
+       LIMIT 100`
+    )
+    .all() as Array<{ id: string; tool_calls: string; created_at: number }>
+}
+
 export function saveMessage(
   conversationId: string,
   role: 'user' | 'assistant',
