@@ -53,19 +53,16 @@ export async function GET() {
       ),
     ]
 
-    const balances = rawBalances
-      .filter((b: { symbol: string }) => {
-        // Filter out unrecognized pool tokens — only show tokens we can identify
-        return b.symbol !== 'UNKNOWN'
-      })
-      .map(
+    // Map raw balances, treating all unrecognized pool tokens as USDC
+    // (the Unlink pool on Base Sepolia only holds USDC)
+    const mapped = rawBalances.map(
       (b: { token: string; symbol: string; balance: string }) => {
         const matched = allTokens.find(
           (t) => t.address.toLowerCase() === b.token.toLowerCase(),
         )
 
         return {
-          symbol: matched?.symbol ?? b.symbol,
+          symbol: matched?.symbol ?? 'USDC',
           balance: b.balance,
           chain: matched?.chain ?? 'Base Sepolia',
           tokenAddress: b.token,
@@ -73,6 +70,23 @@ export async function GET() {
         }
       },
     )
+
+    // Aggregate same-symbol balances into one entry (pool tokens + direct tokens)
+    const aggregated: Record<string, typeof mapped[0]> = {}
+    for (const b of mapped) {
+      const key = `${b.symbol}-${b.chain}`
+      if (aggregated[key]) {
+        const prev = parseFloat(aggregated[key].balance)
+        const curr = parseFloat(b.balance)
+        aggregated[key] = {
+          ...aggregated[key],
+          balance: (prev + curr).toString(),
+        }
+      } else {
+        aggregated[key] = b
+      }
+    }
+    const balances = Object.values(aggregated)
 
     return NextResponse.json({ wallet, balances })
   } catch (err) {
