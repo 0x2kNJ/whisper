@@ -27,6 +27,7 @@ import {
   getBalances,
   deposit,
   transfer,
+  batchTransfer,
   execute,
   buildUniswapExecuteCall,
   type UnlinkClient,
@@ -540,6 +541,34 @@ export const toolDefinitions = [
         },
       },
       required: ['encryptedMessage', 'recipientSecretKey'],
+    },
+  },
+  {
+    name: 'batch_private_transfer' as const,
+    description:
+      'Send USDC privately to MULTIPLE recipients in a single atomic ZK transaction. ' +
+      'More efficient and reliable than sequential individual transfers. Use this for payroll, team payments, or any multi-recipient scenario.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        token: {
+          type: 'string' as const,
+          description: 'Token symbol: USDC or WETH',
+        },
+        recipients: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              name: { type: 'string' as const, description: 'Recipient name (e.g. "Alice")' },
+              amount: { type: 'string' as const, description: 'Amount to send (e.g. "0.001")' },
+            },
+            required: ['name', 'amount'],
+          },
+          description: 'Array of recipients with name and amount',
+        },
+      },
+      required: ['token', 'recipients'],
     },
   },
   {
@@ -1314,6 +1343,55 @@ export async function executeTool(
           strategy,
           message: `Strategy "${strategy.name}" updated successfully`,
         })
+      }
+
+      // ── batch_private_transfer ────────
+      case 'batch_private_transfer': {
+        const tokenSymbol = (input.token as string) || 'USDC'
+        const tokenInfo = resolveToken(tokenSymbol)
+        const client = getUnlinkClient()
+        const recipients = input.recipients as Array<{ name: string; amount: string }>
+
+        // Resolve all recipient names to addresses
+        const resolvedTransfers: Array<{ recipientAddress: string; amount: string; name: string }> = []
+        for (const r of recipients) {
+          let addr = r.name
+          if (!addr.startsWith('unlink1') && !addr.startsWith('0x')) {
+            const resolved = getAddress(addr)
+            if (!resolved) {
+              return JSON.stringify({
+                success: false,
+                error: `Contact "${addr}" not found in address book.`,
+              })
+            }
+            addr = resolved
+          }
+          resolvedTransfers.push({ recipientAddress: addr, amount: r.amount, name: r.name })
+        }
+
+        try {
+          const result = await batchTransfer(client, {
+            token: tokenInfo.address,
+            transfers: resolvedTransfers.map((t) => ({
+              recipientAddress: t.recipientAddress,
+              amount: t.amount,
+            })),
+          })
+
+          return JSON.stringify({
+            success: true,
+            txHash: result.txHash,
+            recipientCount: resolvedTransfers.length,
+            recipients: resolvedTransfers.map((t) => ({ name: t.name, amount: t.amount })),
+            token: tokenSymbol,
+            message: `Batch private transfer: sent ${tokenSymbol} to ${resolvedTransfers.length} recipients in a single ZK transaction`,
+          })
+        } catch (err) {
+          return JSON.stringify({
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        }
       }
 
       // ── private_cross_chain_transfer ────────

@@ -132,6 +132,10 @@ If a tool call returns an error:
 - You cannot execute arbitrary smart contract calls beyond what the tools support.
 - You CAN bridge USDC cross-chain from Base Sepolia to Arc Testnet using the private_cross_chain_transfer tool. This uses Unlink execute() + CCTP to burn USDC on Base and mint on Arc, with your identity hidden behind the Unlink pool.
 
+## BATCH TRANSFERS (IMPORTANT)
+
+When a user wants to pay MULTIPLE recipients (payroll, team payments), ALWAYS use the batch_private_transfer tool instead of multiple individual private_transfer calls. Batch transfer sends to all recipients in a SINGLE atomic ZK transaction — it's faster, cheaper, and more reliable. Only use individual private_transfer for single-recipient payments.
+
 ## ADDRESS BOOK
 
 You have a persistent address book. When a user mentions someone by name (Alice, Bob, etc.):
