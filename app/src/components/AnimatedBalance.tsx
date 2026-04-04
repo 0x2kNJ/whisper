@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+function formatWithCommas(s: string): string {
+  const [whole, frac] = s.split('.')
+  const formatted = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return frac !== undefined ? `${formatted}.${frac}` : formatted
+}
+
 interface AnimatedBalanceProps {
   value: string
   className?: string
@@ -11,7 +17,7 @@ export default function AnimatedBalance({
   value,
   className = '',
 }: AnimatedBalanceProps) {
-  const [display, setDisplay] = useState(value)
+  const [display, setDisplay] = useState(formatWithCommas(value))
   const prevValue = useRef(value)
   const rafRef = useRef<number | null>(null)
 
@@ -21,7 +27,7 @@ export default function AnimatedBalance({
     prevValue.current = value
 
     if (from === to || isNaN(from) || isNaN(to)) {
-      setDisplay(value)
+      setDisplay(formatWithCommas(value))
       return
     }
 
@@ -38,12 +44,12 @@ export default function AnimatedBalance({
       const eased = 1 - Math.pow(1 - progress, 3)
 
       const current = from + (to - from) * eased
-      setDisplay(current.toFixed(decimals))
+      setDisplay(formatWithCommas(current.toFixed(decimals)))
 
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(animate)
       } else {
-        setDisplay(value)
+        setDisplay(formatWithCommas(value))
       }
     }
 
