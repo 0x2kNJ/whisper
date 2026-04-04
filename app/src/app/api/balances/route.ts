@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server'
 import path from 'path'
 
+async function tryImport(basePath: string) {
+  const candidates = [
+    basePath.replace(/\.ts$/, '.js'),
+    basePath,
+    basePath.replace('/src/', '/dist/').replace(/\.ts$/, '.js'),
+  ]
+  for (const c of candidates) {
+    try {
+      return await import(/* webpackIgnore: true */ c)
+    } catch {
+      continue
+    }
+  }
+  throw new Error(`Could not import ${basePath}`)
+}
+
 export async function GET() {
   try {
     const agentConfigPath =
@@ -12,22 +28,6 @@ export async function GET() {
       process.env.AGENT_MODULE_PATH
         ? path.resolve(path.dirname(process.env.AGENT_MODULE_PATH), 'unlink.js')
         : path.resolve(process.cwd(), '../agent/src/unlink.ts')
-
-    async function tryImport(basePath: string) {
-      const candidates = [
-        basePath.replace(/\.ts$/, '.js'),
-        basePath,
-        basePath.replace('/src/', '/dist/').replace(/\.ts$/, '.js'),
-      ]
-      for (const c of candidates) {
-        try {
-          return await import(/* webpackIgnore: true */ c)
-        } catch {
-          continue
-        }
-      }
-      throw new Error(`Could not import ${basePath}`)
-    }
 
     const configMod = await tryImport(agentConfigPath)
     const unlinkMod = await tryImport(unlinkPath)
@@ -45,9 +45,8 @@ export async function GET() {
 
     const balances = rawBalances.map(
       (b: { token: string; symbol: string; balance: string }) => {
-        const baseToken = Object.values(baseSepolia.tokens).find(
-          (t: { address: string }) =>
-            t.address.toLowerCase() === b.token.toLowerCase(),
+        const baseToken = Object.values(baseSepolia.tokens as Record<string, { address: string }>).find(
+          (t) => t.address.toLowerCase() === b.token.toLowerCase(),
         )
         const chain = baseToken ? 'Base Sepolia' : 'Arc Testnet'
         const explorer = baseToken
