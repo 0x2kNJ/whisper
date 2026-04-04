@@ -7,7 +7,6 @@ import ActivityFeed from '@/components/ActivityFeed'
 import QuickActions from '@/components/QuickActions'
 import ChatSidecar from '@/components/ChatSidecar'
 import AnimatedBalance from '@/components/AnimatedBalance'
-import WalletConnect from '@/components/WalletConnect'
 import { useDashboard } from '@/components/DashboardContext'
 
 // ---------------------------------------------------------------------------
@@ -178,7 +177,10 @@ export default function DashboardPage() {
         {/* Top Bar */}
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 px-4 sm:px-7 pt-5 pb-2">
           <div>
-            <h1 className="text-[22px] font-semibold text-white">{getGreeting()}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-[22px] font-semibold text-white">Private Treasury Manager</h1>
+              <span className="text-[10px] text-zinc-600">powered by Unlink</span>
+            </div>
             <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
               <span>{formatDate()}</span>
               <span className="text-[#222]">·</span>
@@ -190,7 +192,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <WalletConnect />
             <span className="text-[10px] uppercase tracking-widest text-[rgba(200,216,255,0.7)] bg-[rgba(200,216,255,0.08)] border border-[rgba(200,216,255,0.15)] rounded-md px-2.5 py-1">
               testnet
             </span>

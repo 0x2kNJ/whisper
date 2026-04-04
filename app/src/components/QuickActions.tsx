@@ -23,6 +23,7 @@ export default function QuickActions({ onAction }: QuickActionsProps) {
         >
           <span className="opacity-70 text-[15px]">{action.icon}</span>
           {action.label}
+          <span className="text-[9px] opacity-50">🔒</span>
         </button>
       ))}
     </div>
