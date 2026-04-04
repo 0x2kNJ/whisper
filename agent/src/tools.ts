@@ -674,6 +674,47 @@ export const toolDefinitions = [
       required: ['name'],
     },
   },
+  {
+    name: 'run_cross_chain_payroll' as const,
+    description:
+      'End-to-end cross-chain private payroll. Bridges USDC from Base Sepolia to Arc Testnet via Unlink + CCTP V2 (sender hidden), ' +
+      'then creates a milestone escrow on Arc that locks funds for each recipient. Returns verify URLs for every recipient. ' +
+      'Use this when a user wants to run payroll across chains, or pay multiple people with escrow conditions on Arc.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        recipients: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              name: { type: 'string' as const, description: 'Recipient name or ENS (e.g. "alice" or "alice.whisper.eth")' },
+              address: { type: 'string' as const, description: 'Recipient EVM address on Arc (0x...). Resolved from ENS if not provided.' },
+              amount: { type: 'string' as const, description: 'USDC amount for this recipient (e.g. "0.003")' },
+            },
+            required: ['name', 'amount'],
+          },
+          description: 'List of payroll recipients with amounts',
+        },
+        milestones: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              amount: { type: 'string' as const, description: 'USDC amount for this milestone' },
+              unlockTime: { type: 'number' as const, description: 'Unix timestamp when funds unlock (0 = immediate)' },
+              oracle: { type: 'string' as const, description: 'Oracle address for price condition (optional)' },
+              triggerPrice: { type: 'string' as const, description: 'Price threshold (optional)' },
+              operator: { type: 'string' as const, enum: ['GT', 'LT'], description: 'GT = price above, LT = price below (optional)' },
+            },
+            required: ['amount'],
+          },
+          description: 'Milestone conditions for escrow release. If omitted, defaults to single immediate-release milestone.',
+        },
+      },
+      required: ['recipients'],
+    },
+  },
 ] as const
 
 // ---------------------------------------------------------------------------
@@ -841,6 +882,38 @@ function resolveArcToken(symbol: string): { address: string; decimals: number } 
     )
   }
   return { address: token.address, decimals: token.decimals }
+}
+
+/** Poll Arc USDC balance until CCTP transfer arrives. */
+async function waitForCctpArrival(
+  recipientOnArc: string,
+  expectedIncrease: bigint,
+  timeoutMs = 300_000, // 5 min default
+): Promise<{ arrived: boolean; balance: bigint; elapsed: number }> {
+  const arcUsdc = resolveArcToken('USDC')
+  const { publicClient } = getArcClients()
+  const startBalance = (await publicClient.readContract({
+    address: arcUsdc.address as Address,
+    abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }] }],
+    functionName: 'balanceOf',
+    args: [recipientOnArc as Address],
+  })) as bigint
+
+  const start = Date.now()
+  while (Date.now() - start < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 10_000)) // poll every 10s
+    const current = (await publicClient.readContract({
+      address: arcUsdc.address as Address,
+      abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ type: 'uint256' }] }],
+      functionName: 'balanceOf',
+      args: [recipientOnArc as Address],
+    })) as bigint
+
+    if (current - startBalance >= expectedIncrease) {
+      return { arrived: true, balance: current, elapsed: Date.now() - start }
+    }
+  }
+  return { arrived: false, balance: 0n, elapsed: Date.now() - start }
 }
 
 /** Data directory for persisted configs. */
@@ -1792,6 +1865,246 @@ export async function executeTool(
           verified: false,
           unlinkAddress: unlinkAddr,
           message: `${ensName} has no Unlink address or payment proof. They may need to register a privacy address first.`,
+        })
+      }
+
+      // ── run_cross_chain_payroll ──────────────
+      case 'run_cross_chain_payroll': {
+        const recipients = input.recipients as Array<{
+          name: string
+          address?: string
+          amount: string
+        }>
+        const milestones = (input.milestones as Array<{
+          amount: string
+          unlockTime?: number
+          oracle?: string
+          triggerPrice?: string
+          operator?: 'GT' | 'LT'
+        }>) || null
+
+        const escrowAddress = getEscrowAddress()
+        if (escrowAddress === '0x0000000000000000000000000000000000000000') {
+          return JSON.stringify({
+            success: false,
+            error: 'WhisperEscrow contract not configured. Set WHISPER_ESCROW_ADDRESS in .env',
+          })
+        }
+
+        const steps: string[] = []
+
+        // Step 1: Resolve ENS names to Arc addresses
+        const resolved: Array<{ name: string; arcAddress: string; amount: string; ensName: string }> = []
+        for (const r of recipients) {
+          let arcAddr = r.address || ''
+          let ensName = r.name.endsWith('.eth') ? r.name : `${r.name.toLowerCase()}.whisper.eth`
+
+          if (!arcAddr) {
+            const ensResult = await resolveENS(ensName)
+            // Use the resolved EVM address for Arc (they share the same address space)
+            arcAddr = ensResult.preferredAddress || ensResult.address || ''
+          }
+
+          if (!arcAddr) {
+            // Fallback: look up address book
+            const contact = getAddress(r.name)
+            if (contact) arcAddr = contact
+          }
+
+          if (!arcAddr) {
+            return JSON.stringify({
+              success: false,
+              error: `Could not resolve address for "${r.name}". Provide an explicit address.`,
+            })
+          }
+
+          resolved.push({ name: r.name, arcAddress: arcAddr, amount: r.amount, ensName })
+        }
+
+        steps.push(`Resolved ${resolved.length} recipients`)
+
+        // Step 2: Calculate total and bridge via CCTP
+        const totalFloat = resolved.reduce((sum, r) => sum + parseFloat(r.amount), 0)
+        const totalAmount = totalFloat.toFixed(6)
+
+        const usdcAddress = baseSepolia.tokens.USDC.address
+        const rawAmount = parseUnits(totalAmount, 6)
+
+        // Bridge to our own Arc wallet
+        const { account } = getArcClients()
+        const ownArcAddress = account.address
+        const mintRecipient = ('0x' + '00'.repeat(12) + ownArcAddress.slice(2).toLowerCase()) as `0x${string}`
+
+        const burnAmountFloat = totalFloat + 0.01 // buffer for Unlink output
+        const withdrawAmount = burnAmountFloat.toFixed(6)
+
+        const approveCalldata = encodeFunctionData({
+          abi: [{
+            name: 'approve', type: 'function' as const,
+            inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+            outputs: [{ type: 'bool' }],
+            stateMutability: 'nonpayable' as const,
+          }],
+          functionName: 'approve',
+          args: [CCTP_TOKEN_MESSENGER_V2 as `0x${string}`, rawAmount],
+        })
+
+        const cctpCalldata = encodeFunctionData({
+          abi: [{
+            name: 'depositForBurn', type: 'function' as const,
+            inputs: [
+              { name: 'amount', type: 'uint256' },
+              { name: 'destinationDomain', type: 'uint32' },
+              { name: 'mintRecipient', type: 'bytes32' },
+              { name: 'burnToken', type: 'address' },
+              { name: 'destinationCaller', type: 'bytes32' },
+              { name: 'maxFee', type: 'uint256' },
+              { name: 'minFinalityThreshold', type: 'uint32' },
+            ],
+            outputs: [{ name: 'nonce', type: 'uint64' }],
+            stateMutability: 'nonpayable' as const,
+          }],
+          functionName: 'depositForBurn',
+          args: [
+            rawAmount,
+            CCTP_ARC_DOMAIN,
+            mintRecipient,
+            usdcAddress as `0x${string}`,
+            ('0x' + '00'.repeat(32)) as `0x${string}`,
+            BigInt(0),
+            0,
+          ],
+        })
+
+        let bridgeTxHash: string
+        try {
+          const result = await execute(getUnlinkClient(), {
+            withdrawals: [{ token: usdcAddress, amount: withdrawAmount }],
+            calls: [
+              { to: usdcAddress, data: approveCalldata },
+              { to: CCTP_TOKEN_MESSENGER_V2, data: cctpCalldata },
+            ],
+            outputs: [{ token: usdcAddress, minAmount: '0' }],
+            deadline: Math.floor(Date.now() / 1000) + 3600,
+          })
+          bridgeTxHash = result.txHash
+          steps.push(`Bridged ${totalAmount} USDC to Arc via CCTP V2 (sender hidden via Unlink). TX: ${bridgeTxHash}`)
+        } catch (err: any) {
+          return JSON.stringify({
+            success: false,
+            error: `CCTP bridge failed: ${err.message}`,
+            step: 'bridge',
+            steps,
+          })
+        }
+
+        // Step 3: Wait for CCTP attestation
+        steps.push('Waiting for Circle attestation...')
+        const arrival = await waitForCctpArrival(ownArcAddress, rawAmount)
+
+        if (!arrival.arrived) {
+          // Funds didn't arrive in time, but bridge tx succeeded
+          return JSON.stringify({
+            success: false,
+            error: `CCTP attestation timed out after ${Math.round(arrival.elapsed / 1000)}s. Bridge TX succeeded (${bridgeTxHash}) but funds haven't arrived on Arc yet. Try create_escrow manually once funds arrive.`,
+            bridgeTxHash,
+            step: 'attestation',
+            steps,
+          })
+        }
+
+        steps.push(`Funds arrived on Arc (${Math.round(arrival.elapsed / 1000)}s)`)
+
+        // Step 4: Create escrow on Arc
+        const arcUsdc = resolveArcToken('USDC')
+        const recipientAddresses = resolved.map((r) => r.arcAddress as Address)
+        const equalShare = Math.floor(10000 / resolved.length)
+        const shares = resolved.map((_, i) =>
+          BigInt(i === resolved.length - 1 ? 10000 - equalShare * (resolved.length - 1) : equalShare),
+        )
+
+        // Build milestones: default to single immediate release of total amount
+        const milestoneTuples = milestones
+          ? milestones.map((m) => ({
+              amount: parseUnits(m.amount, arcUsdc.decimals),
+              unlockTime: BigInt(m.unlockTime || 0),
+              oracle: (m.oracle || '0x0000000000000000000000000000000000000000') as Address,
+              triggerPrice: parseUnits(m.triggerPrice || '0', 0),
+              operator: m.operator === 'LT' ? 1 : 0,
+              released: false,
+            }))
+          : [{
+              amount: rawAmount,
+              unlockTime: 0n,
+              oracle: '0x0000000000000000000000000000000000000000' as Address,
+              triggerPrice: 0n,
+              operator: 0,
+              released: false,
+            }]
+
+        const escrowTotal = milestoneTuples.reduce((sum, m) => sum + m.amount, 0n)
+        const { publicClient, walletClient } = getArcClients()
+
+        // Approve escrow to spend USDC
+        const escrowApproveData = encodeFunctionData({
+          abi: ERC20_APPROVE_ABI,
+          functionName: 'approve',
+          args: [escrowAddress, escrowTotal],
+        })
+        const approveTx = await walletClient.sendTransaction({
+          to: arcUsdc.address as Address,
+          data: escrowApproveData,
+        })
+        await publicClient.waitForTransactionReceipt({ hash: approveTx })
+
+        // Create the payroll
+        const createData = encodeFunctionData({
+          abi: WHISPER_ESCROW_ABI,
+          functionName: 'createPayroll',
+          args: [arcUsdc.address as Address, recipientAddresses, shares, milestoneTuples],
+        })
+        const createTx = await walletClient.sendTransaction({
+          to: escrowAddress,
+          data: createData,
+        })
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: createTx })
+
+        let payrollId = 'unknown'
+        for (const log of receipt.logs) {
+          if (log.address.toLowerCase() === escrowAddress.toLowerCase() && log.topics[1]) {
+            payrollId = BigInt(log.topics[1]).toString()
+            break
+          }
+        }
+
+        steps.push(`Created escrow #${payrollId} on Arc with ${milestoneTuples.length} milestone(s) for ${resolved.length} recipients`)
+
+        // Step 5: Generate verify URLs
+        const verifyResults = resolved.map((r) => ({
+          name: r.name,
+          ensName: r.ensName,
+          amount: r.amount,
+          verifyUrl: `/verify/${r.ensName}`,
+        }))
+
+        steps.push(`Generated ${verifyResults.length} verify URLs`)
+
+        return JSON.stringify({
+          success: true,
+          payrollId,
+          bridgeTxHash,
+          escrowTxHash: createTx,
+          totalBridged: totalAmount,
+          attestationTime: `${Math.round(arrival.elapsed / 1000)}s`,
+          recipients: verifyResults,
+          milestoneCount: milestoneTuples.length,
+          chain: { source: 'Base Sepolia', destination: 'Arc Testnet' },
+          privacy: {
+            senderHidden: true,
+            note: 'On-chain sender = Unlink adapter, not your wallet. Recipient addresses visible on Arc.',
+          },
+          steps,
+          message: `Cross-chain payroll complete. ${totalAmount} USDC bridged (sender hidden) → Escrow #${payrollId} created on Arc with ${milestoneTuples.length} milestone(s) for ${resolved.length} recipients.`,
         })
       }
 

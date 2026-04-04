@@ -1,0 +1,48 @@
+{
+  "id": "cc-payroll-demo-001",
+  "name": "Cross-Chain Engineering Payroll",
+  "type": "standard",
+  "status": "active",
+  "recipients": [
+    {
+      "name": "Alice",
+      "address": "0x1111111111111111111111111111111111111111",
+      "amount": "0.003"
+    },
+    {
+      "name": "Bob",
+      "address": "0x2222222222222222222222222222222222222222",
+      "amount": "0.003"
+    }
+  ],
+  "token": "USDC",
+  "schedule": "monthly",
+  "privacyLevel": "private",
+  "totalBudget": "0.50",
+  "spent": "0.006",
+  "chain": {
+    "source": "Base Sepolia",
+    "destination": "Arc Testnet"
+  },
+  "escrow": {
+    "payrollId": "1",
+    "milestones": [
+      {
+        "amount": "0.006",
+        "unlockTime": 0,
+        "released": false
+      }
+    ]
+  },
+  "executions": [
+    {
+      "timestamp": 1775321900000,
+      "amount": "0.006",
+      "success": true,
+      "bridgeTxHash": "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b",
+      "escrowTxHash": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+      "attestationTime": "42s"
+    }
+  ],
+  "createdAt": 1775321800000
+}
