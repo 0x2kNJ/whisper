@@ -411,12 +411,13 @@ export default function ChatPage() {
             {messages.length > 0 && (
               <button
                 onClick={handleNewChat}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-white transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-zinc-500 hover:text-white transition-colors"
                 title="Back to start"
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
                 </svg>
+                <span className="text-[11px]">Back</span>
               </button>
             )}
             <div>

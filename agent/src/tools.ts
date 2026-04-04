@@ -889,8 +889,16 @@ export async function executeTool(
         const tokenInfo = resolveToken(input.token as string)
         const client = getUnlinkClient()
 
+        // Save original name for display + verify URL
+        const originalRecipient = input.recipient as string
+        const ensName = originalRecipient.endsWith('.eth')
+          ? originalRecipient
+          : originalRecipient.startsWith('unlink1') || originalRecipient.startsWith('0x')
+          ? null // raw address — no ENS name
+          : `${originalRecipient.toLowerCase()}.whisper.eth`
+
         // Resolve recipient: ENS → address book → raw address
-        let recipientAddress = input.recipient as string
+        let recipientAddress = originalRecipient
         if (recipientAddress.endsWith('.eth')) {
           // ENS resolution — prioritizes unlink.address for privacy
           const ensResult = await resolveENS(recipientAddress)

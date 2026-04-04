@@ -57,7 +57,7 @@ export default function VerifyPage() {
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>
-            Back to Whisper
+            Back
           </Link>
           <Link href="/" className="inline-flex items-center gap-2 group">
             <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-[9px] font-bold tracking-widest text-[#c8d8ff]" style={{boxShadow: '0 0 12px rgba(200,216,255,0.06)'}}>
