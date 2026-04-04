@@ -133,6 +133,8 @@ export default function DashboardPage() {
       private_swap: '✓ Swap executed — ZK-shielded',
       create_escrow: '✓ Escrow created — milestone locked',
       schedule_payroll: '✓ Payroll scheduled',
+      create_strategy: '✓ Strategy created',
+      run_cross_chain_payroll: '✓ Cross-chain payroll complete',
       verify_payment_proof: '✓ Income proof generated',
       deposit_to_unlink: '✓ Deposited to Unlink vault',
       resolve_ens: '✓ ENS resolved',
@@ -140,7 +142,8 @@ export default function DashboardPage() {
     const label = labels[toolName]
     if (label) {
       setToast(label)
-      fetchData()
+      // Re-fetch after a short delay to let the file system settle
+      setTimeout(() => fetchData(), 500)
     }
   }, [fetchData])
 
