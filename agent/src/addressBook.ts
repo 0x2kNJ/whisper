@@ -6,6 +6,8 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createPublicClient, http, normalize } from 'viem'
+import { sepolia } from 'viem/chains'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = join(__dirname, '..', 'data')
@@ -46,7 +48,42 @@ export async function saveAddress(name: string, address: string): Promise<void> 
   persist()
 }
 
-/** Get address by name (case-insensitive). Returns undefined if not found. */
+/**
+ * Resolve an ENS name to an Ethereum address.
+ * Uses Ethereum Sepolia for testnet resolution.
+ */
+export async function resolveENS(name: string): Promise<{ address: string | null; textRecords?: Record<string, string> }> {
+  try {
+    const rpcUrl = process.env.ETH_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org'
+    const client = createPublicClient({
+      chain: sepolia,
+      transport: http(rpcUrl),
+    })
+
+    const address = await client.getEnsAddress({
+      name: normalize(name),
+    })
+
+    // Try to read useful text records
+    const textRecords: Record<string, string> = {}
+    const recordKeys = ['description', 'url', 'ai.model', 'ai.capabilities', 'ai.protocol', 'unlink.address']
+    for (const key of recordKeys) {
+      try {
+        const value = await client.getEnsText({ name: normalize(name), key })
+        if (value) textRecords[key] = value
+      } catch {
+        // Skip failed text record reads
+      }
+    }
+
+    return { address: address ?? null, textRecords }
+  } catch (err) {
+    return { address: null }
+  }
+}
+
+/** Get address by name (case-insensitive). Returns undefined if not found.
+ *  For .eth names, call resolveENS() instead (async). */
 export function getAddress(name: string): string | undefined {
   // Exact match first
   if (_book[name] !== undefined) return _book[name]
@@ -55,6 +92,7 @@ export function getAddress(name: string): string | undefined {
   for (const [key, val] of Object.entries(_book)) {
     if (key.toLowerCase() === lower) return val
   }
+  // Check if this looks like an ENS name — caller should use resolveENS() for these
   return undefined
 }
 

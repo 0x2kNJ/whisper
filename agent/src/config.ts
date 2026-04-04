@@ -39,6 +39,12 @@ export const arcTestnet: ChainConfig = {
   },
 }
 
+export const ethereumSepolia = {
+  chainId: 11155111,
+  rpcUrl: process.env.ETH_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org',
+  name: 'Ethereum Sepolia',
+}
+
 export const UNLINK_POOL = '0x647f9b99af97e4b79DD9Dd6de3b583236352f482'
 
 export function getEnvOrThrow(key: string): string {

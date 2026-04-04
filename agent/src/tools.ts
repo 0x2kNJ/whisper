@@ -1461,13 +1461,25 @@ export async function executeTool(
         }
 
         const succeeded = results.filter((r) => r.success).length
+        const totalPaid = results.filter((r) => r.success).reduce((sum, r) => sum + parseFloat(r.amount), 0)
         return JSON.stringify({
           success: succeeded > 0,
           mode: 'executed',
           strategy: strategy.name,
-          results,
+          payslip: {
+            id: `PAY-${strategy.id.slice(0, 8).toUpperCase()}`,
+            executedAt: new Date().toISOString(),
+            totalPaid: totalPaid.toFixed(4),
+            currency: 'USDC',
+            recipientCount: results.length,
+            successCount: succeeded,
+          },
+          results: results.map((r) => ({
+            ...r,
+            explorerUrl: r.txHash ? `https://sepolia.basescan.org/tx/${r.txHash}` : null,
+          })),
           summary: `${succeeded}/${results.length} payments executed privately via Unlink`,
-          message: `Executed payroll "${strategy.name}": ${succeeded} of ${results.length} payments sent.`,
+          message: `Payroll "${strategy.name}" complete: ${succeeded}/${results.length} paid, ${totalPaid.toFixed(4)} USDC total.`,
         })
       }
 
