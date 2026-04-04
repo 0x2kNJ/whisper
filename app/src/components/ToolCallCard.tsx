@@ -60,8 +60,8 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
   const isError = hasResult && toolCall.result.includes('"success":false')
 
   return (
-    <div className={`my-2 rounded-lg border overflow-hidden transition-colors duration-500 backdrop-blur-sm ${
-      isSuccess ? 'border-green-900/30 bg-[rgba(10,20,10,0.4)]' : isError ? 'border-red-900/30 bg-[rgba(20,10,10,0.4)]' : 'border-[rgba(255,255,255,0.04)] bg-[rgba(10,10,15,0.4)]'
+    <div className={`animate-slide-up my-2 rounded-lg border overflow-hidden transition-colors duration-500 ${
+      isSuccess ? 'border-green-900/50 bg-[#0a0f0a]' : isError ? 'border-red-900/50 bg-[#0f0a0a]' : 'border-[#222] bg-[#0a0a0a]'
     }`}>
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3">
@@ -94,7 +94,7 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
 
       {/* Input section */}
       {hasInput && (
-        <div className="border-t border-[rgba(255,255,255,0.04)]">
+        <div className="border-t border-[#1a1a1a]">
           <button
             onClick={() => setInputOpen((v) => !v)}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
@@ -114,7 +114,7 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
 
       {/* Result section */}
       {hasResult && (
-        <div className="border-t border-[rgba(255,255,255,0.04)]">
+        <div className="border-t border-[#1a1a1a]">
           <button
             onClick={() => setResultOpen((v) => !v)}
             className="flex w-full items-center gap-2 px-4 py-2 text-left text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
