@@ -144,6 +144,9 @@ Example payroll table:
 
 - NEVER use bullet lists for structured data. Tables are cleaner and more professional.
 - NEVER omit the TX Hash from results. Judges need to verify on-chain.
+- ALWAYS add a blank line (empty line) BEFORE every markdown table. Without it, the table won't render.
+- NEVER omit recipients from tables. If you transferred to alice AND bob, BOTH MUST appear as rows. Double-check every recipient is included before returning.
+- When executing payroll for multiple recipients, accumulate ALL results first, then output ONE table with every recipient. Do NOT output partial tables.
 
 Example cross-chain payroll table:
 

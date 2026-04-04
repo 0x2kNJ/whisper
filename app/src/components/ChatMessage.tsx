@@ -104,14 +104,28 @@ function formatText(text: string): React.ReactNode {
     }
 
     // Parse all markdown tables in this chunk (handles multiple tables)
-    const lines = part.split('\n')
+    // Pre-process: if a line contains text followed by a pipe-table, split them
+    const rawLines = part.split('\n')
+    const lines: string[] = []
+    for (const raw of rawLines) {
+      // Detect "some text.| Header | ..." pattern — split before the table
+      const tableInline = raw.match(/^(.+?)\s*(\|[^|]+\|.*)$/)
+      if (tableInline && !raw.trim().startsWith('|')) {
+        lines.push(tableInline[1])
+        lines.push(tableInline[2])
+      } else {
+        lines.push(raw)
+      }
+    }
+
     const segments: React.ReactNode[] = []
     let textBuf: string[] = []
     let lineIdx = 0
 
     while (lineIdx < lines.length) {
       const line = lines[lineIdx]
-      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('|') && trimmed.includes('|', 1)) {
         // Flush text buffer
         if (textBuf.length > 0) {
           segments.push(formatInline(textBuf.join('\n'), `${i}-text-${lineIdx}`))
@@ -123,32 +137,38 @@ function formatText(text: string): React.ReactNode {
           tableLines.push(lines[lineIdx])
           lineIdx++
         }
-        const headerRow = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) || []
-        const dataRows = tableLines.slice(2).map((row) => row.split('|').filter(Boolean).map((c) => c.trim()))
-        segments.push(
-          <table key={`${i}-table-${lineIdx}`} className="my-2 w-full text-xs border-collapse">
-            <thead>
-              <tr>
-                {headerRow.map((h, hi) => (
-                  <th key={hi} className="text-left text-zinc-500 font-medium px-2 py-1.5 border-b border-[#222]">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {dataRows.map((row, ri) => (
-                <tr key={ri}>
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="text-zinc-300 px-2 py-1.5 border-b border-[#1a1a1a]">
-                      {formatInline(cell, `${i}-${lineIdx}-${ri}-${ci}`)}
-                    </td>
+        // Need at least header + separator + 1 data row
+        if (tableLines.length >= 3) {
+          const headerRow = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) || []
+          const dataRows = tableLines.slice(2).map((row) => row.split('|').filter(Boolean).map((c) => c.trim()))
+          segments.push(
+            <table key={`${i}-table-${lineIdx}`} className="my-3 w-full text-xs border-collapse">
+              <thead>
+                <tr>
+                  {headerRow.map((h, hi) => (
+                    <th key={hi} className="text-left text-zinc-500 font-medium px-2 py-1.5 border-b border-[#222]">
+                      {h}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )
+              </thead>
+              <tbody>
+                {dataRows.map((row, ri) => (
+                  <tr key={ri}>
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="text-zinc-300 px-2 py-1.5 border-b border-[#1a1a1a]">
+                        {formatInline(cell, `${i}-${lineIdx}-${ri}-${ci}`)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        } else {
+          // Not a valid table, treat as text
+          textBuf.push(...tableLines)
+        }
       } else {
         textBuf.push(line)
         lineIdx++
