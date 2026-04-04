@@ -35,10 +35,10 @@ function ThinkingIndicator({ visible }: { visible: boolean }) {
 }
 
 const SUGGESTED_PROMPTS = [
-  'Pay my team privately \u{1F512}: Alice 0.2 USDC, Bob 0.15 USDC, Charlie 0.1 USDC',
+  'Pay my team privately \u{1F512}: Alice 0.01 USDC, Bob 0.01 USDC, Charlie 0.01 USDC',
   'Set up a private weekly payroll strategy \u{1F512} for the engineering team',
-  'Create a private escrow \u{1F512} for Dave: 0.5 USDC, release when ETH > $4k',
-  'Private swap \u{1F512} 0.1 USDC \u2192 ETH for Bob + send Alice 0.05 USDC privately',
+  'Create a private escrow \u{1F512} for Dave: 0.01 USDC, release when ETH > $4k',
+  'Private swap \u{1F512} 0.001 USDC \u2192 ETH for Bob + send Alice 0.01 USDC privately',
 ]
 
 export default function ChatPage() {
@@ -471,11 +471,8 @@ export default function ChatPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                 {(() => {
-                  const totalUsdc = balances.reduce((sum, b) => b.symbol === 'USDC' ? sum + parseFloat(b.balance) : sum, 0)
                   const dynamicPrompts = [
-                    totalUsdc > 0
-                      ? `Run payroll from your ${totalUsdc.toFixed(1)} USDC — pay Alice, Bob, Charlie privately`
-                      : SUGGESTED_PROMPTS[0],
+                    `Pay team privately \u{1F512}: Alice 0.01 USDC, Bob 0.01 USDC, Charlie 0.01 USDC`,
                     ...SUGGESTED_PROMPTS.slice(1),
                   ]
                   return dynamicPrompts
