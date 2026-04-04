@@ -1,0 +1,125 @@
+import { NextResponse } from 'next/server'
+import { getAssistantMessagesWithToolCalls } from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
+
+const TOOL_TYPE_MAP: Record<string, string> = {
+  private_transfer: 'transfer',
+  batch_private_transfer: 'transfer',
+  schedule_payroll: 'payroll',
+  execute_strategy: 'payroll',
+  create_escrow: 'escrow',
+  verify_payment_proof: 'verification',
+  private_swap: 'swap',
+  deposit_to_unlink: 'deposit',
+}
+
+interface ActivityItem {
+  id: string
+  type: string
+  title: string
+  detail: string
+  amount?: string
+  token?: string
+  timestamp: number
+  status: 'success' | 'failed' | 'pending'
+}
+
+function buildTitle(tc: { name: string; input?: Record<string, unknown>; result?: string }): string {
+  const input = tc.input || {}
+  switch (tc.name) {
+    case 'private_transfer':
+      return `Private transfer — ${input.recipientAddress || input.recipient || 'unknown'}`
+    case 'batch_private_transfer':
+      return `Batch transfer — ${Array.isArray(input.transfers) ? input.transfers.length : '?'} recipients`
+    case 'schedule_payroll':
+      return 'Payroll scheduled'
+    case 'execute_strategy':
+      return `Payroll executed — ${input.strategyId || 'strategy'}`
+    case 'create_escrow':
+      return `Escrow created — ${input.recipient || 'unknown'}`
+    case 'verify_payment_proof':
+      return `Income verified — ${input.name || input.ensName || 'unknown'}`
+    case 'private_swap':
+      return `Swap — ${input.fromToken || 'USDC'} → ${input.toToken || 'WETH'}`
+    case 'deposit_to_unlink':
+      return 'Deposit to Unlink vault'
+    default:
+      return tc.name.replace(/_/g, ' ')
+  }
+}
+
+function buildDetail(tc: { name: string; input?: Record<string, unknown> }): string {
+  const input = tc.input || {}
+  switch (tc.name) {
+    case 'private_transfer':
+      return 'Shielded via Unlink pool'
+    case 'batch_private_transfer':
+      return `${Array.isArray(input.transfers) ? input.transfers.length : '?'} private transfers`
+    case 'schedule_payroll':
+      return `Schedule: ${input.schedule || 'unknown'}`
+    case 'execute_strategy':
+      return `Strategy execution`
+    case 'create_escrow':
+      return `Trigger: ${input.triggerCondition || input.operator || 'milestone-based'}`
+    case 'verify_payment_proof':
+      return 'ZK proof generated · ENS record updated'
+    case 'private_swap':
+      return 'Via Uniswap V3 through Unlink'
+    case 'deposit_to_unlink':
+      return 'USDC moved from public wallet to privacy pool'
+    default:
+      return ''
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const limit = parseInt(searchParams.get('limit') || '20', 10)
+
+    const items: ActivityItem[] = []
+    const messages = getAssistantMessagesWithToolCalls()
+
+    for (const msg of messages) {
+      try {
+        const tools = JSON.parse(msg.tool_calls)
+        for (const tc of tools) {
+          const type = TOOL_TYPE_MAP[tc.name]
+          if (!type) continue
+
+          let status: 'success' | 'failed' | 'pending' = 'success'
+          if (tc.result) {
+            try {
+              const result = typeof tc.result === 'string' ? JSON.parse(tc.result) : tc.result
+              if (result.error || result.status === 'failed') status = 'failed'
+            } catch {
+              if (typeof tc.result === 'string' && tc.result.toLowerCase().includes('error')) {
+                status = 'failed'
+              }
+            }
+          }
+
+          items.push({
+            id: `${msg.id}-${tc.name}-${tc.timestamp || msg.created_at}`,
+            type,
+            title: buildTitle(tc),
+            detail: buildDetail(tc),
+            amount: tc.input?.amount?.toString(),
+            token: tc.input?.token?.toString() || 'USDC',
+            timestamp: tc.timestamp || msg.created_at,
+            status,
+          })
+        }
+      } catch {}
+    }
+
+    // Sort by timestamp desc and limit
+    items.sort((a, b) => b.timestamp - a.timestamp)
+
+    return NextResponse.json({ items: items.slice(0, limit) })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to fetch activity'
+    return NextResponse.json({ error: message, items: [] }, { status: 500 })
+  }
+}
