@@ -289,8 +289,8 @@ export async function deposit(
  */
 export async function transfer(
   client: UnlinkClient,
-  params: { token: string; recipientAddress: string; amount: string },
-): Promise<{ txHash: string }> {
+  params: { token: string; recipientAddress: string; amount: string; skipPolling?: boolean },
+): Promise<{ txHash: string; status: 'relayed' | 'submitted' }> {
   try {
     const rawAmount = toRawAmount(params.amount, params.token)
 
@@ -300,8 +300,13 @@ export async function transfer(
       recipientAddress: params.recipientAddress,
     })
 
+    if (params.skipPolling) {
+      // Return immediately after submission — caller handles confirmation
+      return { txHash: result.txId, status: 'submitted' }
+    }
+
     await pollUntilRelayed(client.sdk, result.txId)
-    return { txHash: result.txId }
+    return { txHash: result.txId, status: 'relayed' }
   } catch (err) {
     throw new Error(
       `[unlink] transfer failed: ${err instanceof Error ? err.message : String(err)}`,

@@ -856,20 +856,54 @@ export async function executeTool(
         const tokenInfo = resolveToken(input.token as string)
         const client = getUnlinkClient()
 
-        const result = await transfer(client, {
-          token: tokenInfo.address,
-          recipientAddress: input.recipient as string,
-          amount: input.amount as string,
-        })
+        // Resolve recipient: if it's a name (not an address), look up from address book
+        let recipientAddress = input.recipient as string
+        if (!recipientAddress.startsWith('unlink1') && !recipientAddress.startsWith('0x')) {
+          const resolved = getAddress(recipientAddress)
+          if (!resolved) {
+            return JSON.stringify({
+              success: false,
+              error: `Contact "${recipientAddress}" not found in address book. Use list_contacts to see available contacts.`,
+            })
+          }
+          recipientAddress = resolved
+        }
 
-        return JSON.stringify({
-          success: true,
-          txHash: result.txHash,
-          recipient: input.recipient,
-          amount: input.amount,
-          token: input.token,
-          message: `Privately transferred ${input.amount} ${input.token} to ${input.recipient}`,
-        })
+        // Auto-retry: if first attempt fails, wait 3s and retry once
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const result = await transfer(client, {
+              token: tokenInfo.address,
+              recipientAddress,
+              amount: input.amount as string,
+              skipPolling: true, // Return immediately — don't wait 30s for relay
+            })
+
+            return JSON.stringify({
+              success: true,
+              txHash: result.txHash,
+              status: result.status,
+              recipient: input.recipient,
+              amount: input.amount,
+              token: input.token,
+              message: `Privately transferred ${input.amount} ${input.token} to ${input.recipient}. Transaction ${result.status === 'submitted' ? 'submitted to relayer' : 'confirmed on-chain'}.`,
+              ...(attempt > 0 ? { retried: true } : {}),
+            })
+          } catch (err) {
+            if (attempt === 0) {
+              // First failure — wait 3s and retry
+              await new Promise((r) => setTimeout(r, 3000))
+              continue
+            }
+            // Second failure — give up
+            return JSON.stringify({
+              success: false,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          }
+        }
+        // Should never reach here, but satisfy TypeScript
+        return JSON.stringify({ success: false, error: 'Unexpected error' })
       }
 
       // ── private_swap ─────────────────────────
