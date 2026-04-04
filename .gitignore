@@ -12,3 +12,4 @@ broadcast/
 *.tsbuildinfo
 .next/
 next-env.d.ts
+.gstack/
