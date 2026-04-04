@@ -13,6 +13,7 @@ interface PositionCardProps {
   recipients?: { name: string }[]
   badge?: string
   footer: string
+  verifyLinks?: { name: string; href: string }[]
   onClick?: () => void
   onClose?: (id: string) => void
 }
@@ -65,6 +66,7 @@ export default function PositionCard({
   recipients,
   badge,
   footer,
+  verifyLinks,
   onClick,
   onClose,
 }: PositionCardProps) {
@@ -232,6 +234,27 @@ export default function PositionCard({
               +{recipients.length - 5}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Verify links */}
+      {verifyLinks && verifyLinks.length > 0 && (
+        <div className="flex gap-1.5 mt-2.5 flex-wrap">
+          {verifyLinks.map((link) => (
+            <a
+              key={link.name}
+              href={link.href}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[9px] rounded-md px-2 py-0.5 transition-all hover:brightness-125"
+              style={{
+                background: 'rgba(200,216,255,0.08)',
+                border: '1px solid rgba(200,216,255,0.12)',
+                color: 'rgba(200,216,255,0.7)',
+              }}
+            >
+              Verify {link.name} →
+            </a>
+          ))}
         </div>
       )}
 

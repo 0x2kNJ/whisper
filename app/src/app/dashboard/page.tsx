@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import StatsRow from '@/components/StatsRow'
 import PositionCard from '@/components/PositionCard'
 import ActivityFeed from '@/components/ActivityFeed'
@@ -125,6 +125,9 @@ export default function DashboardPage() {
     fetchData()
   }, [fetchData])
 
+  // Polling interval ref for post-tool-completion refresh
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   // Listen for tool completions from the sidecar
   const handleToolComplete = useCallback((toolName: string) => {
     const labels: Record<string, string> = {
@@ -143,9 +146,19 @@ export default function DashboardPage() {
     const label = labels[toolName]
     if (label !== undefined) {
       if (label) setToast(label)
-      // Re-fetch quickly, then again after 3s for balance propagation
-      setTimeout(() => fetchData(), 500)
-      setTimeout(() => fetchData(), 3000)
+      // Immediate fetch for positions/activity, then poll every 4s for 20s
+      // to catch Unlink relay propagation (balance changes can take 5-30s)
+      fetchData()
+      if (pollRef.current) clearInterval(pollRef.current)
+      let elapsed = 0
+      pollRef.current = setInterval(() => {
+        elapsed += 4000
+        fetchData()
+        if (elapsed >= 20000) {
+          if (pollRef.current) clearInterval(pollRef.current)
+          pollRef.current = null
+        }
+      }, 4000)
     }
   }, [fetchData])
 
@@ -265,6 +278,10 @@ export default function DashboardPage() {
                 progress={pos.progress}
                 progressLabel={pos.totalBudget ? `$${pos.spent} of $${pos.totalBudget} budget spent` : undefined}
                 recipients={pos.recipients.map(r => ({ name: r.name || r.address.slice(0, 6) }))}
+                verifyLinks={pos.recipients.filter(r => r.name).map(r => ({
+                  name: r.name,
+                  href: `/verify/${r.name.toLowerCase()}.whisper.eth`,
+                }))}
                 footer={pos.lastExecutedAt ? `Last run: ${new Date(pos.lastExecutedAt).toLocaleDateString()}` : `Created: ${new Date(pos.createdAt).toLocaleDateString()}`}
                 onClick={() => handleAction(`Tell me about the ${pos.name} strategy`)}
                 onClose={async (id) => {
