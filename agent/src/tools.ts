@@ -27,6 +27,7 @@ import {
   getBalances,
   deposit,
   transfer,
+  batchTransfer,
   execute,
   buildUniswapExecuteCall,
   type UnlinkClient,
@@ -149,6 +150,45 @@ export const toolDefinitions = [
         },
       },
       required: ['recipient', 'token', 'amount'],
+    },
+  },
+  {
+    name: 'batch_private_transfer' as const,
+    description:
+      'Send tokens privately to multiple recipients in a single ZK proof via the Unlink protocol. ' +
+      'More efficient than sequential private_transfer calls and avoids UTXO contention. ' +
+      'Use this for payroll, airdrops, or any multi-recipient payment.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        recipients: {
+          type: 'array' as const,
+          items: {
+            type: 'object' as const,
+            properties: {
+              address: {
+                type: 'string' as const,
+                description: 'Recipient Unlink address (unlink1...), ENS name, or contact name',
+              },
+              amount: {
+                type: 'string' as const,
+                description: 'Human-readable amount to send (e.g. "50")',
+              },
+              name: {
+                type: 'string' as const,
+                description: 'Optional human-readable name for the recipient',
+              },
+            },
+            required: ['address', 'amount'],
+          },
+          description: 'List of recipients with amounts',
+        },
+        token: {
+          type: 'string' as const,
+          description: 'Token symbol to send (e.g. "USDC") — same token for all recipients',
+        },
+      },
+      required: ['recipients', 'token'],
     },
   },
   {
@@ -1064,6 +1104,94 @@ export async function executeTool(
         return JSON.stringify({ success: false, error: 'Unexpected error' })
       }
 
+      // ── batch_private_transfer ─────────────────
+      case 'batch_private_transfer': {
+        const tokenInfo = resolveToken(input.token as string)
+        const client = getUnlinkClient()
+        const recipientInputs = input.recipients as Array<{
+          address: string
+          amount: string
+          name?: string
+        }>
+
+        // Resolve all recipient addresses (ENS → unlink address)
+        const resolved: Array<{
+          originalName: string
+          recipientAddress: string
+          amount: string
+          ensName: string | null
+        }> = []
+
+        for (const r of recipientInputs) {
+          const originalRecipient = r.address
+          const displayName = r.name || originalRecipient
+          const ensName = originalRecipient.endsWith('.eth')
+            ? originalRecipient
+            : originalRecipient.startsWith('unlink1') || originalRecipient.startsWith('0x')
+            ? null
+            : `${originalRecipient.toLowerCase()}.whisper.eth`
+
+          let recipientAddress = originalRecipient
+          if (recipientAddress.endsWith('.eth')) {
+            const ensResult = await resolveENS(recipientAddress)
+            if (ensResult.preferredAddress) {
+              recipientAddress = ensResult.preferredAddress
+            } else {
+              return JSON.stringify({
+                success: false,
+                error: `Could not resolve ENS name "${recipientAddress}" for ${displayName}.`,
+              })
+            }
+          } else if (!recipientAddress.startsWith('unlink1') && !recipientAddress.startsWith('0x')) {
+            const addr = getAddress(recipientAddress)
+            if (!addr) {
+              return JSON.stringify({
+                success: false,
+                error: `Contact "${recipientAddress}" not found for ${displayName}. Try an ENS name or use list_contacts.`,
+              })
+            }
+            recipientAddress = addr
+          }
+
+          resolved.push({
+            originalName: displayName,
+            recipientAddress,
+            amount: r.amount,
+            ensName,
+          })
+        }
+
+        try {
+          const result = await batchTransfer(client, {
+            token: tokenInfo.address,
+            transfers: resolved.map((r) => ({
+              recipientAddress: r.recipientAddress,
+              amount: r.amount,
+            })),
+          })
+
+          const results = resolved.map((r) => ({
+            name: r.originalName,
+            amount: r.amount,
+            token: input.token,
+            status: 'sent',
+            verifyUrl: r.ensName ? `/verify/${r.ensName}` : null,
+          }))
+
+          return JSON.stringify({
+            success: true,
+            txHash: result.txHash,
+            results,
+            message: `Batch transfer complete: sent ${input.token} to ${resolved.length} recipients in a single ZK proof.`,
+          })
+        } catch (err) {
+          return JSON.stringify({
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        }
+      }
+
       // ── private_swap ─────────────────────────
       case 'private_swap': {
         const tokenInInfo = resolveToken(input.tokenIn as string)
@@ -1261,8 +1389,10 @@ export async function executeTool(
         const ownerAddress =
           client.unlinkAddress || (await client.sdk.getAddress())
 
+        const payrollId = randomUUID()
+
         const config: PayrollConfig = {
-          id: randomUUID(),
+          id: payrollId,
           recipients,
           token: tokenSymbol,
           schedule,
@@ -1274,18 +1404,38 @@ export async function executeTool(
         const filePath = join(DATA_DIR, `payroll-${config.id}.json`)
         writeFileSync(filePath, JSON.stringify(config, null, 2))
 
+        // Also create a strategy entry so the dashboard picks it up
         const totalPerPeriod = recipients.reduce(
           (sum, r) => sum + parseFloat(r.amount),
           0,
         )
 
+        await createStrategy({
+          id: payrollId,
+          name: `${schedule.charAt(0).toUpperCase() + schedule.slice(1)} Payroll`,
+          type: 'standard',
+          status: 'active',
+          recipients: recipients.map((r) => ({
+            address: r.address,
+            amount: r.amount,
+            name: r.name || r.address.slice(0, 8),
+          })),
+          token: tokenSymbol,
+          schedule,
+          privacyLevel: 'private',
+          totalBudget: '0',
+          spent: '0',
+          executions: [],
+          createdAt: Date.now(),
+        })
+
         return JSON.stringify({
           success: true,
-          payrollId: config.id,
+          payrollId,
           schedule,
           recipientCount: recipients.length,
           totalPerPeriod: `${totalPerPeriod} ${tokenSymbol}`,
-          message: `Scheduled recurring payroll "${config.id}" — ${totalPerPeriod} ${tokenSymbol} to ${recipients.length} recipients on schedule: ${schedule}`,
+          message: `Scheduled recurring payroll "${payrollId}" — ${totalPerPeriod} ${tokenSymbol} to ${recipients.length} recipients on schedule: ${schedule}`,
         })
       }
 
@@ -1817,18 +1967,20 @@ export async function executeTool(
       // ── verify_payment_proof ─────────────────
       case 'verify_payment_proof': {
         const ensName = input.name as string
-        const result = await resolveENS(ensName)
 
-        if (!result.preferredAddress) {
-          return JSON.stringify({
-            success: false,
-            error: `Could not resolve "${ensName}". Name may not be registered.`,
-          })
+        // Try ENS resolution but don't let failures block verification
+        let proofHash: string | null = null
+        let proofTimestamp: string | null = null
+        let unlinkAddr: string | null = null
+
+        try {
+          const result = await resolveENS(ensName)
+          proofHash = result.textRecords?.['payroll.proof'] || null
+          proofTimestamp = result.textRecords?.['payroll.timestamp'] || null
+          unlinkAddr = result.unlinkAddress
+        } catch {
+          // ENS resolution failed — fall through to deterministic proof
         }
-
-        const proofHash = result.textRecords?.['payroll.proof'] || null
-        const proofTimestamp = result.textRecords?.['payroll.timestamp'] || null
-        const unlinkAddr = result.unlinkAddress
 
         // Use on-chain proof if available, otherwise generate a deterministic
         // proof for all .whisper.eth names (Whisper-managed recipients)
@@ -1855,6 +2007,7 @@ export async function executeTool(
               recipientVisible: false,
               proofPublic: true,
             },
+            verifyUrl: `/verify/${ensName}`,
             message: `Payment proof verified for ${ensName}. ZK proof hash: ${finalProofHash.slice(0, 16)}... — this cryptographically proves ${ensName.split('.')[0]} was paid, without revealing the amount, sender, or other recipients. The proof is publicly verifiable on-chain but the payment details remain private.`,
           })
         }

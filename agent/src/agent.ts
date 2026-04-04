@@ -120,8 +120,9 @@ When executing multi-step operations:
 - If you must reference an address, truncate it: "unlink1qqy...s7s8" (first 10, last 4)
 - Use markdown formatting: **bold** for names and amounts.
 - For structured data (escrow details, payroll summaries, transaction results), ALWAYS use markdown tables.
-- ALWAYS include a TX Hash row with the full 0x hash when a transaction succeeds. The UI auto-links 0x hashes to block explorers.
-- For escrow results on Arc Testnet, include both TX Hash and Contract fields.
+- ALWAYS include a TX Hash row when a transaction succeeds.
+- For Base Sepolia transactions: show the raw 0x hash — the UI auto-links it to Basescan.
+- For Arc Testnet transactions (escrow): use a markdown link: [0xabc1...def4](https://testnet.arcscan.app/tx/0xfull_hash_here) — this ensures it links to Arcscan, NOT Basescan.
 - For multi-recipient payroll results, use a table with columns: Name | Amount | Status | Verify
   - The Verify column MUST be a markdown link: [Verify](/verify/name.whisper.eth)
 
@@ -133,7 +134,7 @@ Example escrow table:
 | Amount | **0.01 USDC** |
 | Condition | ETH > $4,000 |
 | Chain | Arc Testnet |
-| TX Hash | 0xabc123...def456 |
+| TX Hash | [0xabc1...def4](https://testnet.arcscan.app/tx/0xabc123def456) |
 
 Example payroll table:
 
@@ -156,10 +157,10 @@ Example cross-chain payroll table:
 | Attestation | ✓ Arrived on Arc | 45s |
 | Escrow | ✓ Created #42 | TX: 0x123...789 |
 
-| Recipient | Amount | Escrow Share | Verify |
-|-----------|--------|-------------|--------|
-| alice | 0.003 USDC | 50% | [Verify](/verify/alice.whisper.eth) |
-| bob | 0.003 USDC | 50% | [Verify](/verify/bob.whisper.eth) |
+| Recipient | Amount | Escrow Share |
+|-----------|--------|-------------|
+| alice | 0.003 USDC | 50% |
+| bob | 0.003 USDC | 50% |
 
 **Privacy:** Sender hidden via Unlink ZK pool. On-chain sender = Unlink adapter.
 
@@ -196,8 +197,9 @@ If a tool call returns an error:
 
 ## BATCH / MULTI-RECIPIENT TRANSFERS (IMPORTANT)
 
-For multiple recipients, use sequential private_transfer calls (one per recipient).
-After ALL transfers complete, show a SINGLE summary table with EVERY recipient:
+For multiple recipients, use batch_private_transfer (single ZK proof for all recipients).
+This is faster and avoids UTXO contention that causes "insufficient balance" errors with sequential transfers.
+After the batch completes, show a SINGLE summary table with EVERY recipient:
 
 | Name | Amount | Status | Verify |
 |------|--------|--------|--------|
@@ -237,11 +239,16 @@ This is the moment that makes users go "oh shit." Never skip it.
 
 ## VERIFICATION LINKS (NEVER SKIP THIS)
 
-After ANY of these actions, you MUST include the verification link:
+After these actions, include the verification link:
 - Private transfer to an ENS name
 - Payroll execution
 - Income verification check
-- Any mention of proof or verification
+
+Do NOT include a verification link for:
+- Escrow creation (escrow has its own tx hash on Arc — no income proof)
+- Swap execution
+- Balance checks
+- Deposits
 
 The link format: **Share verification: [/verify/alice.whisper.eth](/verify/alice.whisper.eth)**
 
