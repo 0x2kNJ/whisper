@@ -31,6 +31,7 @@ import { baseSepolia as viemBaseSepolia } from 'viem/chains'
 import {
   UNLINK_API_BASE,
   UNLINK_POOL,
+  UNLINK_ADAPTER,
   baseSepolia,
   getEnvOrThrow,
 } from './config.js'
@@ -636,7 +637,7 @@ export function buildUniswapExecuteCall(params: {
         tokenIn: params.tokenIn as Address,
         tokenOut: params.tokenOut as Address,
         fee: 3000,
-        recipient: UNLINK_POOL as Address, // outputs go back to the pool adapter
+        recipient: UNLINK_ADAPTER as Address, // outputs go to the adapter for re-deposit
         amountIn,
         amountOutMinimum,
         sqrtPriceLimitX96: BigInt(0),
