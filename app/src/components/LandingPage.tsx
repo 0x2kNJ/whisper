@@ -129,13 +129,116 @@ export default function LandingPage() {
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
 
+    // ── FLOATING NAV — appears after intro fades ──
+    const floatingNav = document.createElement('nav')
+    floatingNav.id = 'floating-nav'
+    floatingNav.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 2rem;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: opacity 0.6s ease, transform 0.6s ease, background 0.4s ease;
+      pointer-events: none;
+      background: transparent;
+    `
+
+    const navLeft = document.createElement('div')
+    navLeft.style.cssText = 'display:flex;align-items:center;gap:0.6rem;'
+
+    const navLogo = document.createElement('div')
+    navLogo.style.cssText = `
+      width:28px;height:28px;border-radius:50%;
+      border:1px solid rgba(200,216,255,0.15);
+      background:rgba(10,10,15,0.6);
+      display:flex;align-items:center;justify-content:center;
+      font-size:10px;font-weight:700;color:#c8d8ff;
+      letter-spacing:0.1em;font-family:'Space Grotesk',sans-serif;
+    `
+    navLogo.textContent = 'W'
+
+    const navTitle = document.createElement('span')
+    navTitle.style.cssText = 'font-size:0.85rem;font-weight:500;color:white;font-family:"Space Grotesk",sans-serif;letter-spacing:0.02em;'
+    navTitle.textContent = 'Whisper'
+
+    navLeft.appendChild(navLogo)
+    navLeft.appendChild(navTitle)
+
+    const navRight = document.createElement('div')
+    navRight.style.cssText = 'display:flex;align-items:center;gap:1rem;'
+
+    const navCta = document.createElement('a')
+    navCta.href = '/chat'
+    navCta.style.cssText = `
+      display:inline-flex;align-items:center;gap:0.5rem;
+      padding:0.5rem 1.25rem;
+      background:rgba(200,216,255,0.08);
+      border:1px solid rgba(200,216,255,0.15);
+      border-radius:9999px;
+      color:#c8d8ff;
+      font-family:'Space Grotesk',sans-serif;
+      font-size:0.8rem;font-weight:400;letter-spacing:0.05em;
+      text-decoration:none;
+      cursor:pointer;
+      transition:all 0.3s ease;
+    `
+    navCta.textContent = 'Launch App'
+
+    const navArrow = document.createElement('span')
+    navArrow.textContent = '→'
+    navArrow.style.cssText = 'transition:transform 0.3s;display:inline-block;font-size:0.85rem;'
+    navCta.appendChild(navArrow)
+
+    navCta.addEventListener('mouseenter', () => {
+      navCta.style.background = 'rgba(200,216,255,0.15)'
+      navCta.style.borderColor = 'rgba(200,216,255,0.35)'
+      navCta.style.boxShadow = '0 0 20px rgba(200,216,255,0.08)'
+      navArrow.style.transform = 'translateX(3px)'
+    })
+    navCta.addEventListener('mouseleave', () => {
+      navCta.style.background = 'rgba(200,216,255,0.08)'
+      navCta.style.borderColor = 'rgba(200,216,255,0.15)'
+      navCta.style.boxShadow = 'none'
+      navArrow.style.transform = 'translateX(0)'
+    })
+
+    navRight.appendChild(navCta)
+    floatingNav.appendChild(navLeft)
+    floatingNav.appendChild(navRight)
+    container.appendChild(floatingNav)
+
     // ── ENTER BUTTON ──
     const handleEnter = () => {
       introOverlay.style.opacity = '0'
+
+      // Show floating nav after intro fades
+      setTimeout(() => {
+        floatingNav.style.opacity = '1'
+        floatingNav.style.transform = 'translateY(0)'
+        floatingNav.style.pointerEvents = 'auto'
+      }, 1500)
+
       setTimeout(() => introOverlay.remove(), 3000)
       setTimeout(() => { document.body.style.overflow = '' }, 3000)
     }
     enterBtn.addEventListener('click', handleEnter)
+
+    // Add glass background to nav when scrolled
+    const handleNavScroll = () => {
+      if (window.scrollY > 50) {
+        floatingNav.style.background = 'rgba(0,0,0,0.6)'
+        floatingNav.style.backdropFilter = 'blur(20px)'
+        ;(floatingNav.style as unknown as Record<string, string>).webkitBackdropFilter = 'blur(20px)'
+        floatingNav.style.borderBottom = '1px solid rgba(255,255,255,0.04)'
+      } else {
+        floatingNav.style.background = 'transparent'
+        floatingNav.style.backdropFilter = 'none'
+        ;(floatingNav.style as unknown as Record<string, string>).webkitBackdropFilter = 'none'
+        floatingNav.style.borderBottom = 'none'
+      }
+    }
+    window.addEventListener('scroll', handleNavScroll, { passive: true })
 
     // ── CLEANUP ──
     cleanupRef.current = () => {
@@ -143,6 +246,7 @@ export default function LandingPage() {
       cancelAnimationFrame(lenisFrameId)
       window.removeEventListener('resize', handleResize)
       window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('scroll', handleNavScroll)
       lenis.destroy()
       renderer.dispose()
       document.body.style.overflow = ''
@@ -152,6 +256,7 @@ export default function LandingPage() {
       introOverlay.remove()
       heroText.remove()
       scrollSections.remove()
+      floatingNav.remove()
     }
   }, [])
 
