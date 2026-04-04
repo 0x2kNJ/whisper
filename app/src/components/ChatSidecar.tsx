@@ -76,21 +76,8 @@ export default function ChatSidecar({
     }
   }, [isOpen])
 
-  // Set initial prompt — auto-send if flagged (one-click demo actions)
+  // Set initial prompt (auto-send effect is placed after sendMessage definition)
   const autoSendFired = useRef(false)
-  useEffect(() => {
-    if (initialPrompt && isOpen) {
-      if (autoSend && !autoSendFired.current) {
-        autoSendFired.current = true
-        // Small delay so the sidecar slide animation is visible before sending
-        setTimeout(() => sendMessage(initialPrompt), 400)
-      } else {
-        setInput(initialPrompt)
-        setTimeout(() => inputRef.current?.focus(), 100)
-      }
-    }
-    if (!isOpen) autoSendFired.current = false
-  }, [initialPrompt, isOpen, autoSend, sendMessage])
 
   // Fetch conversations when opened
   const fetchConversations = useCallback(async () => {
@@ -335,6 +322,20 @@ export default function ChatSidecar({
     },
     [agentHistory, isThinking, activeConversationId],
   )
+
+  // Auto-send initial prompt (must be after sendMessage definition)
+  useEffect(() => {
+    if (initialPrompt && isOpen) {
+      if (autoSend && !autoSendFired.current) {
+        autoSendFired.current = true
+        setTimeout(() => sendMessage(initialPrompt), 400)
+      } else {
+        setInput(initialPrompt)
+        setTimeout(() => inputRef.current?.focus(), 100)
+      }
+    }
+    if (!isOpen) autoSendFired.current = false
+  }, [initialPrompt, isOpen, autoSend, sendMessage])
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
