@@ -227,57 +227,12 @@ export default function ChatSidebar({
           })()}
         </div>
 
-        {/* Token breakdown */}
-        <div className="px-4 pb-3">
-          <div className="flex flex-col gap-1.5">
-            {balancesLoading && balances.length === 0 ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-700 border-t-[#c8d8ff]" />
-              </div>
-            ) : (
-              balances.map((b, i) => {
-                const card = (
-                  <div className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-white/[0.03] transition-colors cursor-pointer group">
-                    {/* Token icon */}
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.04] border border-white/[0.06] text-[9px] font-bold text-[#c8d8ff]">
-                      {b.symbol.slice(0, 1)}
-                    </div>
-                    {/* Token info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-medium text-white">{b.symbol}</span>
-                        <div className="flex items-center gap-1.5">
-                          <AnimatedBalance value={b.balance} className="text-[11px] font-mono text-zinc-300 balance-glow" />
-                          {deltas[`${b.symbol}-${b.chain}`] && (
-                            <span className={`text-[9px] font-mono animate-fade-in ${
-                              deltas[`${b.symbol}-${b.chain}`].direction === 'up' ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {deltas[`${b.symbol}-${b.chain}`].amount}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-[9px] text-zinc-600">{b.chain}</span>
-                        <span className="text-[8px] font-mono text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity">
-                          {b.tokenAddress.slice(0, 6)}...{b.tokenAddress.slice(-4)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-
-                if (b.explorerUrl) {
-                  return (
-                    <a key={i} href={b.explorerUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      {card}
-                    </a>
-                  )
-                }
-                return <div key={i}>{card}</div>
-              })
-            )}
+        {/* Loading state */}
+        {balancesLoading && balances.length === 0 && (
+          <div className="px-4 pb-3 flex items-center justify-center py-4">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-700 border-t-[#c8d8ff]" />
           </div>
+        )}
         </div>
       </div>
     </div>
