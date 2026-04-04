@@ -131,7 +131,7 @@ export default function DashboardPage() {
       private_transfer: '✓ Transfer sent — ZK-shielded',
       batch_private_transfer: '✓ Batch transfer complete — ZK-shielded',
       private_swap: '✓ Swap executed — ZK-shielded',
-      create_escrow: '✓ Escrow created — milestone locked',
+      create_escrow: '✓ Smart escrow created — conditions locked',
       schedule_payroll: '✓ Payroll scheduled',
       create_strategy: '✓ Strategy created',
       run_cross_chain_payroll: '✓ Cross-chain payroll complete',

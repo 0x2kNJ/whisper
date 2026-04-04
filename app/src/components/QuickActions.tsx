@@ -8,7 +8,7 @@ const actions = [
   { label: 'Transfer Funds', icon: '→', prompt: 'Pay alice.whisper.eth 0.001 USDC privately' },
   { label: 'Setup Payroll', icon: '⊕', prompt: 'Setup payroll: alice and bob, 0.01 USDC each, monthly' },
   { label: 'Run Payroll', icon: '◷', prompt: 'Run payroll: alice and bob — 0.001 USDC each' },
-  { label: 'Milestone Pay', icon: '⊡', prompt: 'Create escrow for alice.whisper.eth: 0.01 USDC, release when ETH > $4k' },
+  { label: 'Bonus Pay', icon: '⊡', prompt: 'Create escrow for alice.whisper.eth: 0.01 USDC bonus, release when ETH hits $4,000' },
   { label: 'Proof of Income', icon: '◈', prompt: 'Verify income for alice.whisper.eth' },
   { label: 'Rebalance', icon: '⇄', prompt: 'Rebalance treasury to 80% USDC / 20% WETH' },
 ]

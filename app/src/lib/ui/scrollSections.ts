@@ -21,8 +21,8 @@ export function createScrollSections(): HTMLElement {
 
   const headlineA = document.createElement('h2')
   headlineA.className = 'section-headline'
-  headlineA.style.cssText = 'font-size:clamp(2rem,5vw,3.5rem);font-weight:400;color:rgba(255,255,255,0.95);line-height:1.1;letter-spacing:-0.02em;margin-bottom:2rem;'
-  headlineA.textContent = 'Your treasury is a glass box.'
+  headlineA.style.cssText = 'font-size:clamp(1.8rem,3.8vw,3rem);font-weight:400;color:rgba(255,255,255,0.95);line-height:1.1;letter-spacing:-0.02em;margin-bottom:2rem;white-space:nowrap;'
+  headlineA.textContent = 'Your on-chain treasury is a glass box.'
 
   const bodyA = document.createElement('div')
   bodyA.className = 'section-body'
@@ -30,7 +30,7 @@ export function createScrollSections(): HTMLElement {
 
   const p1 = document.createElement('p')
   p1.style.cssText = 'color:rgba(255,255,255,0.6);font-size:clamp(1rem,1.5vw,1.15rem);font-weight:300;line-height:1.7;margin-bottom:1rem;'
-  p1.textContent = 'Every swap, every payroll batch, every rebalance — broadcast to the entire network the moment it hits the mempool. Competitors front-run your trades. Analysts map your strategy. MEV bots extract value before your transaction confirms.'
+  p1.textContent = 'Every transaction \u2014 transfers, payroll, rebalancing \u2014 is broadcast to the entire network the moment it hits the mempool. Competitors front-run your trades. Analysts map your strategy. MEV bots extract value before your transaction confirms.'
 
   const p2 = document.createElement('p')
   p2.style.cssText = 'color:rgba(255,255,255,0.6);font-size:clamp(1rem,1.5vw,1.15rem);font-weight:300;line-height:1.7;'
@@ -49,7 +49,7 @@ export function createScrollSections(): HTMLElement {
   const sectionB = createSection('how-it-works')
   const headlineB = document.createElement('h2')
   headlineB.className = 'section-headline'
-  headlineB.style.cssText = 'text-align:center;font-size:clamp(1.5rem,3vw,2rem);font-weight:300;color:white;margin-bottom:2.5rem;letter-spacing:-0.01em;'
+  headlineB.style.cssText = 'text-align:center;font-size:clamp(1.8rem,3.8vw,3rem);font-weight:400;color:rgba(255,255,255,0.95);margin-bottom:2.5rem;letter-spacing:-0.02em;'
   headlineB.textContent = 'One agent. Six capabilities.'
 
   const grid = document.createElement('div')
@@ -58,11 +58,11 @@ export function createScrollSections(): HTMLElement {
 
   const steps = [
     { icon: 'chat', title: 'AI Treasury Agent', desc: '"Pay Alice 0.2 USDC, swap the rest to ETH." Claude interprets intent and executes multi-step operations autonomously.' },
-    { icon: 'swap_horiz', title: 'Uniswap V3', desc: 'Swaps, liquidity, and price quotes routed on-chain. The agent finds optimal paths and handles slippage automatically.' },
-    { icon: 'language', title: 'Cross-Chain via CCTP', desc: 'Move USDC across chains through Circle CCTP. Arc and Base connected — the agent picks the cheapest route.' },
-    { icon: 'visibility_off', title: 'Private via Unlink', desc: 'Every transfer routes through Unlink. On-chain proof exists — but your strategy, amounts, and counterparties stay hidden.' },
-    { icon: 'badge', title: 'ENS Resolution', desc: 'Send to alice.eth instead of raw addresses. The agent resolves ENS names on-chain before executing transfers.' },
-    { icon: 'verified_user', title: 'Private Income Proofs', desc: 'Generate ZK-backed income verification from your on-chain history — prove earnings without revealing balances or counterparties.' },
+    { icon: 'lock_clock', title: 'Smart Escrow', desc: 'Lock funds in smart contracts with time-locks and price triggers. Bonus pay releases when ETH hits $4,000 — on Arc Testnet.' },
+    { icon: 'language', title: 'Cross-Chain via CCTP', desc: 'Move tokens privately across chains through Circle CCTP. Arc and Base implemented.' },
+    { icon: 'visibility_off', title: 'Private via Unlink', desc: 'Every transaction routes through Unlink. On-chain proof exists — but your strategy, amounts, and counterparties stay hidden.' },
+    { icon: 'badge', title: 'ENS Resolution', desc: 'Say "pay alice.eth" — no addresses needed. ENS names resolve to shielded Unlink addresses, so recipients stay private even though the name is public.' },
+    { icon: 'verified_user', title: 'Private Income Proofs', desc: 'Generate income verification with selective disclosure — prove earnings without revealing balances or counterparties.' },
   ]
 
   for (const step of steps) {
@@ -103,12 +103,12 @@ export function createScrollSections(): HTMLElement {
   const sectionC = createSection('demo')
   const headlineC = document.createElement('h2')
   headlineC.className = 'section-headline'
-  headlineC.style.cssText = 'font-size:clamp(1.5rem,3vw,2rem);font-weight:300;color:white;margin-bottom:0.5rem;letter-spacing:-0.01em;'
-  headlineC.textContent = 'See it deliver.'
+  headlineC.style.cssText = 'font-size:clamp(1.8rem,3.8vw,3rem);font-weight:400;color:rgba(255,255,255,0.95);margin-bottom:0.5rem;letter-spacing:-0.02em;'
+  headlineC.textContent = 'What privacy looks like.'
 
   const subtitleC = document.createElement('p')
-  subtitleC.style.cssText = 'font-size:0.85rem;color:#666;margin-bottom:2rem;max-width:500px;'
-  subtitleC.textContent = 'Real balances. Real payrolls. Real ZK proofs. All shielded via Unlink on Base Sepolia.'
+  subtitleC.style.cssText = 'font-size:0.85rem;color:#666;margin-bottom:2rem;white-space:nowrap;'
+  subtitleC.textContent = 'Real balances. Real payrolls. Real ZK proofs. All shielded via Unlink on Base Sepolia and Arc.'
 
   const dashboardFrame = document.createElement('div')
   dashboardFrame.className = 'demo-terminal terminal-glow'
@@ -217,20 +217,20 @@ export function createScrollSections(): HTMLElement {
   const ctaSub = document.createElement('p')
   ctaSub.className = 'section-body'
   ctaSub.style.cssText = 'color:rgba(255,255,255,0.55);font-size:clamp(0.9rem,1.2vw,1.05rem);font-weight:300;line-height:1.7;max-width:440px;'
-  ctaSub.textContent = 'Step into the treasury agent. Speak plainly, move privately.'
+  ctaSub.textContent = 'Step into the treasury agent.'
 
   const ctaBtn = document.createElement('a')
   ctaBtn.href = '/dashboard'
   ctaBtn.className = 'section-body'
   ctaBtn.style.cssText = `
-    display:inline-flex;align-items:center;gap:0.75rem;
-    padding:1rem 2.5rem;
+    display:inline-flex;align-items:center;gap:0.5rem;
+    padding:0.5rem 1.25rem;
     background:rgba(200,216,255,0.08);
     border:1px solid rgba(200,216,255,0.15);
     border-radius:9999px;
     color:#c8d8ff;
     font-family:'Space Grotesk',sans-serif;
-    font-size:0.95rem;font-weight:400;letter-spacing:0.05em;
+    font-size:0.8rem;font-weight:400;letter-spacing:0.05em;
     text-decoration:none;
     cursor:pointer;
     transition:all 0.4s ease;

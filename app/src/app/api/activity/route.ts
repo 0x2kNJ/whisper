@@ -55,7 +55,7 @@ function buildTitle(tc: { name: string; input?: Record<string, unknown>; result?
     case 'execute_strategy':
       return `Payroll executed — ${input.strategyId || 'strategy'}`
     case 'create_escrow':
-      return `Escrow created — ${humanName(input.recipient)}`
+      return `Smart escrow created — ${humanName(input.recipient)}`
     case 'verify_payment_proof':
       return `Income verified — ${input.name || input.ensName || 'unknown'}`
     case 'private_swap':
