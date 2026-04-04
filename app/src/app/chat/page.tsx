@@ -505,16 +505,15 @@ export default function ChatPage() {
             className="flex items-end gap-3 max-w-3xl mx-auto"
           >
             <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
+              <input
+                ref={inputRef as React.RefObject<HTMLInputElement>}
+                type="text"
                 value={input}
-                onChange={handleInputChange}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask Whisper anything..."
                 disabled={isThinking}
-                rows={1}
-                className="w-full resize-none overflow-hidden rounded-xl border border-[#222] bg-[#0a0a0a] px-4 py-3 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-[#333] disabled:opacity-60 disabled:cursor-not-allowed leading-relaxed"
-                style={{ minHeight: '44px', maxHeight: '160px' }}
+                className="w-full rounded-xl border border-[#222] bg-[#0a0a0a] px-4 py-3 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-[#333] disabled:opacity-60 disabled:cursor-not-allowed h-11"
               />
             </div>
 
@@ -538,7 +537,7 @@ export default function ChatPage() {
           </form>
 
           <p className="mt-2 text-center text-[10px] text-zinc-700 max-w-3xl mx-auto">
-            Whisper operates on testnet. No real funds. Shift+Enter for new line.
+            Testnet only. No real funds.
           </p>
         </div>
       </div>
