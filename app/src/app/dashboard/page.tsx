@@ -1,183 +1,72 @@
 'use client'
 
-import NavBar from '@/components/NavBar'
+import { useState, useEffect, useCallback } from 'react'
+import StatsRow from '@/components/StatsRow'
+import PositionCard from '@/components/PositionCard'
+import ActivityFeed from '@/components/ActivityFeed'
+import QuickActions from '@/components/QuickActions'
+import ChatSidecar from '@/components/ChatSidecar'
+import AnimatedBalance from '@/components/AnimatedBalance'
+import { useDashboard } from '@/components/DashboardContext'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface Transaction {
+interface Stats {
+  totalMoved: number
+  transactionCount: number
+  transactionBreakdown: string
+  activePositions: number
+  activeBreakdown: string
+  privacyScore: number
+}
+
+interface Position {
   id: string
-  type: 'Deposit' | 'Private Transfer' | 'Private Swap' | 'Escrow Creation' | 'Payroll'
-  amount: string
+  name: string
+  type: 'standard' | 'vesting' | 'performance' | 'contractor'
+  status: 'active' | 'paused' | 'completed'
+  recipients: { name: string; address: string; amount: string }[]
   token: string
-  status: 'Confirmed' | 'Pending' | 'Failed'
-  txHash: string
-  time: string
+  schedule: string
+  privacyLevel: string
+  totalBudget: string
+  spent: string
+  progress: number
+  executionCount: number
+  lastExecutedAt: number | null
+  createdAt: number
 }
 
-interface Receipt {
-  paymentId: string
-  recipient: string
-  amount: string
-  token: string
-  timestamp: string
-  txHash: string
-  private: boolean
+interface ActivityItem {
+  id: string
+  type: 'transfer' | 'payroll' | 'escrow' | 'verification' | 'swap' | 'deposit'
+  title: string
+  detail: string
+  amount?: string
+  token?: string
+  timestamp: number
+  status: 'success' | 'failed' | 'pending'
 }
 
 // ---------------------------------------------------------------------------
-// Hardcoded demo data
+// Helpers
 // ---------------------------------------------------------------------------
 
-const BALANCES = [
-  {
-    label: 'USDC',
-    chain: 'Base Sepolia',
-    amount: '12,450.00',
-    usd: '$12,450.00',
-    change: '+2.3%',
-    positive: true,
-  },
-  {
-    label: 'WETH',
-    chain: 'Base Sepolia',
-    amount: '3.2500',
-    usd: '≈ $9,100.00',
-    change: '+1.1%',
-    positive: true,
-  },
-  {
-    label: 'USDC',
-    chain: 'Arc Testnet',
-    amount: '5,000.00',
-    usd: '$5,000.00',
-    change: '0.0%',
-    positive: true,
-  },
-]
-
-const TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx1',
-    type: 'Deposit',
-    amount: '5,000.00',
-    token: 'USDC',
-    status: 'Confirmed',
-    txHash: '0x4f3a...c12e',
-    time: '2 min ago',
-  },
-  {
-    id: 'tx2',
-    type: 'Private Transfer',
-    amount: '250.00',
-    token: 'USDC',
-    status: 'Confirmed',
-    txHash: '0x9b1d...4a77',
-    time: '18 min ago',
-  },
-  {
-    id: 'tx3',
-    type: 'Private Swap',
-    amount: '1,000.00',
-    token: 'USDC → WETH',
-    status: 'Confirmed',
-    txHash: '0x2c8e...f391',
-    time: '1 hr ago',
-  },
-  {
-    id: 'tx4',
-    type: 'Escrow Creation',
-    amount: '3,500.00',
-    token: 'USDC',
-    status: 'Confirmed',
-    txHash: '0xa71b...0d54',
-    time: '3 hr ago',
-  },
-  {
-    id: 'tx5',
-    type: 'Payroll',
-    amount: '2,200.00',
-    token: 'USDC',
-    status: 'Pending',
-    txHash: '0x5e2f...8bc3',
-    time: '6 hr ago',
-  },
-  {
-    id: 'tx6',
-    type: 'Private Transfer',
-    amount: '0.5000',
-    token: 'WETH',
-    status: 'Confirmed',
-    txHash: '0x1d9a...e620',
-    time: '1 day ago',
-  },
-]
-
-const RECEIPTS: Receipt[] = [
-  {
-    paymentId: 'rcpt_001',
-    recipient: '0xabc1...def2',
-    amount: '250.00',
-    token: 'USDC',
-    timestamp: '2026-04-03 14:22',
-    txHash: '0x9b1d...4a77',
-    private: true,
-  },
-  {
-    paymentId: 'rcpt_002',
-    recipient: '0x3f7e...91ca',
-    amount: '0.5000',
-    token: 'WETH',
-    timestamp: '2026-04-02 09:15',
-    txHash: '0x1d9a...e620',
-    private: true,
-  },
-  {
-    paymentId: 'rcpt_003',
-    recipient: '0x88d4...5b3f',
-    amount: '1,000.00',
-    token: 'USDC',
-    timestamp: '2026-04-01 17:44',
-    txHash: '0x7c3b...2af1',
-    private: false,
-  },
-]
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function StatBadge({ status }: { status: Transaction['status'] }) {
-  const colors: Record<Transaction['status'], string> = {
-    Confirmed: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-    Pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    Failed: 'text-red-400 bg-red-400/10 border-red-400/20',
-  }
-  return (
-    <span
-      className={`rounded border px-1.5 py-0.5 text-[10px] font-medium tracking-wide ${colors[status]}`}
-    >
-      {status}
-    </span>
-  )
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
-function TypeBadge({ type }: { type: Transaction['type'] }) {
-  const colors: Record<Transaction['type'], string> = {
-    Deposit: 'text-[#c8d8ff] bg-[#c8d8ff]/10 border-[#c8d8ff]/20',
-    'Private Transfer': 'text-purple-300 bg-purple-400/10 border-purple-400/20',
-    'Private Swap': 'text-teal-300 bg-teal-400/10 border-teal-400/20',
-    'Escrow Creation': 'text-orange-300 bg-orange-400/10 border-orange-400/20',
-    Payroll: 'text-pink-300 bg-pink-400/10 border-pink-400/20',
-  }
-  return (
-    <span
-      className={`rounded border px-1.5 py-0.5 text-[10px] font-medium tracking-wide whitespace-nowrap ${colors[type]}`}
-    >
-      {type}
-    </span>
-  )
+function formatDate(): string {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -185,163 +74,191 @@ function TypeBadge({ type }: { type: Transaction['type'] }) {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [positions, setPositions] = useState<Position[]>([])
+  const [activity, setActivity] = useState<ActivityItem[]>([])
+  const [balance, setBalance] = useState<string>('0.00')
+  const [walletAddr, setWalletAddr] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+
+  // Chat sidecar state from context (shared with layout/IconRail)
+  const { chatOpen, chatPrompt, chatWidth, openChat, closeChat, setChatWidth } = useDashboard()
+
+  // Fetch all data
+  const fetchData = useCallback(async () => {
+    try {
+      const [statsRes, positionsRes, activityRes, balancesRes] = await Promise.all([
+        fetch('/api/stats').then(r => r.json()).catch(() => null),
+        fetch('/api/positions').then(r => r.json()).catch(() => ({ positions: [] })),
+        fetch('/api/activity?limit=20').then(r => r.json()).catch(() => ({ items: [] })),
+        fetch('/api/balances').then(r => r.json()).catch(() => null),
+      ])
+
+      if (statsRes) setStats(statsRes)
+      if (positionsRes?.positions) setPositions(positionsRes.positions)
+      if (activityRes?.items) setActivity(activityRes.items)
+
+      if (balancesRes?.balances) {
+        const usdc = balancesRes.balances.find(
+          (b: { symbol: string }) => b.symbol === 'USDC'
+        )
+        if (usdc) setBalance(usdc.balance)
+      }
+      if (balancesRes?.wallet) setWalletAddr(balancesRes.wallet)
+    } catch {
+      // Silently fail — dashboard shows loading/empty states
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  // Quick action handler — open chat with pre-filled prompt
+  const handleAction = (prompt: string) => {
+    openChat(prompt)
+  }
+
+  // Map positions to card props
+  const mapPositionType = (pos: Position) => {
+    if (pos.status === 'completed') return 'completed' as const
+    if (pos.type === 'standard' || pos.type === 'contractor') return 'payroll' as const
+    if (pos.type === 'vesting') return 'escrow' as const
+    return 'payroll' as const
+  }
+
+  const truncateAddr = (addr: string) => {
+    if (!addr) return ''
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-black overflow-hidden">
-      <NavBar />
+    <div className="flex-1 flex flex-col min-h-screen overflow-y-auto relative">
+      {/* Ambient background */}
+      <div className="dashboard-ambient" />
 
-      {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
-        <div className="max-w-5xl mx-auto space-y-8">
-
-          {/* Page title */}
+      {/* Content */}
+      <div className="relative z-[2] flex flex-col flex-1">
+        {/* Top Bar */}
+        <div className="flex justify-between items-center px-7 pt-5 pb-2">
           <div>
-            <h1 className="text-xl font-semibold text-white">Dashboard</h1>
-            <p className="text-xs text-zinc-500 mt-1">
-              Overview of your private treasury balances and transaction history.
-            </p>
+            <h1 className="text-[22px] font-semibold text-white">{getGreeting()}</h1>
+            <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
+              <span>{formatDate()}</span>
+              <span className="text-[#222]">·</span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                Base Sepolia
+              </span>
+            </div>
           </div>
 
-          {/* Balance cards */}
-          <section>
-            <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
-              Private Balances
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] uppercase tracking-widest text-[rgba(200,216,255,0.7)] bg-[rgba(200,216,255,0.08)] border border-[rgba(200,216,255,0.15)] rounded-md px-2.5 py-1">
+              testnet
+            </span>
+            <div className="flex items-center gap-2.5 bg-[rgba(200,216,255,0.06)] border border-[rgba(200,216,255,0.12)] rounded-[10px] px-4 py-2">
+              <span className="text-[rgba(200,216,255,0.6)] text-sm">◈</span>
+              <span className="text-[15px] font-semibold text-white tabular-nums">
+                <AnimatedBalance value={balance} />
+              </span>
+              <span className="text-[11px] text-zinc-500">USDC</span>
+              {walletAddr && (
+                <span className="text-[10px] text-zinc-500 font-mono">
+                  {truncateAddr(walletAddr)}
+                </span>
+              )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {BALANCES.map((b, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl border border-[#222] bg-[#0a0a0a] px-5 py-4"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="text-xs font-semibold text-white">{b.label}</div>
-                      <div className="text-[10px] text-zinc-600 mt-0.5">{b.chain}</div>
-                    </div>
-                    <span
-                      className={`text-[10px] font-mono rounded px-1.5 py-0.5 border ${
-                        b.positive
-                          ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-                          : 'text-red-400 bg-red-400/10 border-red-400/20'
-                      }`}
-                    >
-                      {b.change}
-                    </span>
-                  </div>
-                  <div className="text-lg font-semibold text-white font-mono">
-                    {b.amount}
-                  </div>
-                  <div className="text-xs text-zinc-500 mt-0.5">{b.usd}</div>
-                </div>
-              ))}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="px-7 pb-5 pt-2">
+          <QuickActions onAction={handleAction} />
+        </div>
+
+        {/* Stats Row */}
+        <StatsRow stats={stats} loading={loading} />
+
+        {/* Active Positions */}
+        <div className="flex justify-between items-center px-7 mb-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-[1.5px] text-zinc-500">
+            Active Positions
+          </h2>
+          <span className="text-xs text-[rgba(200,216,255,0.6)] cursor-pointer hover:text-[rgba(200,216,255,1)] transition-colors">
+            View all positions →
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-7 pb-6">
+          {loading ? (
+            <>
+              <div className="shimmer h-[180px] rounded-[14px]" />
+              <div className="shimmer h-[180px] rounded-[14px]" />
+              <div className="shimmer h-[180px] rounded-[14px]" />
+            </>
+          ) : positions.length > 0 ? (
+            positions.map((pos) => (
+              <PositionCard
+                key={pos.id}
+                type={mapPositionType(pos)}
+                title={pos.name}
+                subtitle={`${pos.recipients.length} recipient${pos.recipients.length !== 1 ? 's' : ''} · ${pos.schedule} · ${pos.privacyLevel === 'private' ? 'Private' : 'Public'}`}
+                status={pos.status === 'active' ? '● Running' : pos.status === 'paused' ? '⏸ Paused' : '✓ Completed'}
+                progress={pos.progress}
+                progressLabel={pos.totalBudget ? `$${pos.spent} of $${pos.totalBudget} budget spent` : undefined}
+                recipients={pos.recipients.map(r => ({ name: r.name || r.address.slice(0, 6) }))}
+                footer={pos.lastExecutedAt ? `Last run: ${new Date(pos.lastExecutedAt).toLocaleDateString()}` : `Created: ${new Date(pos.createdAt).toLocaleDateString()}`}
+                onClick={() => handleAction(`Tell me about the ${pos.name} strategy`)}
+              />
+            ))
+          ) : (
+            <div className="col-span-3 text-center py-12">
+              <div className="text-2xl mb-2 opacity-30">◈</div>
+              <p className="text-zinc-500 text-sm">No active positions yet.</p>
+              <p className="text-zinc-600 text-xs mt-1">Use the chat to create payrolls, escrows, or verify income.</p>
             </div>
-          </section>
+          )}
+        </div>
 
-          {/* Transactions table */}
-          <section>
-            <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
-              Recent Transactions
-            </div>
-            <div className="rounded-xl border border-[#222] bg-[#0a0a0a] overflow-hidden">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-[#1a1a1a]">
-                    {['Type', 'Amount', 'Token', 'Status', 'Tx Hash', 'Time'].map((col) => (
-                      <th
-                        key={col}
-                        className="text-left text-[10px] uppercase tracking-widest text-zinc-600 px-4 py-3 font-medium"
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {TRANSACTIONS.map((tx, i) => (
-                    <tr
-                      key={tx.id}
-                      className={`border-b border-[#111] transition-colors hover:bg-[#111] ${
-                        i === TRANSACTIONS.length - 1 ? 'border-b-0' : ''
-                      }`}
-                    >
-                      <td className="px-4 py-3">
-                        <TypeBadge type={tx.type} />
-                      </td>
-                      <td className="px-4 py-3 font-mono text-white">{tx.amount}</td>
-                      <td className="px-4 py-3 text-zinc-400">{tx.token}</td>
-                      <td className="px-4 py-3">
-                        <StatBadge status={tx.status} />
-                      </td>
-                      <td className="px-4 py-3 font-mono text-zinc-500">{tx.txHash}</td>
-                      <td className="px-4 py-3 text-zinc-600 whitespace-nowrap">{tx.time}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+        {/* Recent Activity */}
+        <div className="flex justify-between items-center px-7 mb-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-[1.5px] text-zinc-500">
+            Recent Activity
+          </h2>
+          <span className="text-xs text-[rgba(200,216,255,0.6)] cursor-pointer hover:text-[rgba(200,216,255,1)] transition-colors">
+            Export CSV →
+          </span>
+        </div>
 
-          {/* Payment receipts */}
-          <section>
-            <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
-              Payment Receipts
-            </div>
-            <div className="flex flex-col gap-2">
-              {RECEIPTS.map((r) => (
-                <div
-                  key={r.paymentId}
-                  className="rounded-xl border border-[#222] bg-[#0a0a0a] px-5 py-4 flex items-center gap-4 flex-wrap"
-                >
-                  {/* Receipt ID + private badge */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-mono text-xs text-[#c8d8ff]">{r.paymentId}</span>
-                    {r.private && (
-                      <span className="rounded border border-purple-400/20 bg-purple-400/10 px-1.5 py-0.5 text-[9px] font-medium text-purple-300 tracking-wide">
-                        Private
-                      </span>
-                    )}
-                  </div>
+        <div className="px-7 pb-8">
+          <ActivityFeed items={activity} loading={loading} />
+        </div>
 
-                  {/* Recipient */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[10px] text-zinc-600">Recipient</div>
-                    <div className="font-mono text-xs text-zinc-300 truncate">{r.recipient}</div>
-                  </div>
-
-                  {/* Amount */}
-                  <div className="shrink-0">
-                    <div className="text-[10px] text-zinc-600">Amount</div>
-                    <div className="font-mono text-xs text-white">
-                      {r.amount} {r.token}
-                    </div>
-                  </div>
-
-                  {/* Tx hash */}
-                  <div className="shrink-0">
-                    <div className="text-[10px] text-zinc-600">Tx Hash</div>
-                    <div className="font-mono text-xs text-zinc-400">{r.txHash}</div>
-                  </div>
-
-                  {/* Timestamp */}
-                  <div className="shrink-0">
-                    <div className="text-[10px] text-zinc-600">Time</div>
-                    <div className="text-xs text-zinc-500">{r.timestamp}</div>
-                  </div>
-
-                  {/* Verify button */}
-                  <button className="shrink-0 rounded-lg border border-[#333] bg-[#111] px-3 py-1.5 text-[11px] font-medium text-zinc-300 hover:border-[#c8d8ff]/40 hover:text-[#c8d8ff] transition-colors">
-                    Verify
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Footer */}
-          <p className="text-center text-[10px] text-zinc-700 pb-4">
+        {/* Footer */}
+        <div className="mt-auto px-7 pb-4">
+          <p className="text-center text-[10px] text-zinc-700">
             Balances are shielded via Unlink zero-knowledge proofs. Not visible on-chain.
           </p>
         </div>
       </div>
+
+      {/* Chat Sidecar */}
+      <ChatSidecar
+        isOpen={chatOpen}
+        onClose={closeChat}
+        initialPrompt={chatPrompt}
+        width={chatWidth}
+        onWidthChange={setChatWidth}
+      />
+
+      {/* Backdrop when sidecar is open */}
+      <div
+        className={`sidecar-backdrop ${chatOpen ? 'visible' : ''}`}
+        onClick={closeChat}
+      />
     </div>
   )
 }

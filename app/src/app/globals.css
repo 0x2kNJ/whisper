@@ -50,6 +50,17 @@ body {
   color: #fff;
 }
 
+/* Hero image background for chat page */
+.chat-hero-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: url('/hero.png') center 35%/cover no-repeat;
+  opacity: 0.08;
+  filter: blur(8px);
+  pointer-events: none;
+}
+
 /* ============================================
    AMBIENT BACKGROUND — floating gradient orbs
    ============================================ */
@@ -104,6 +115,11 @@ body {
   background: radial-gradient(circle, rgba(var(--accent), 0.06) 0%, transparent 70%);
   animation: orbDrift3 30s ease-in-out infinite;
   pointer-events: none;
+}
+
+@keyframes scrollBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
 }
 
 @keyframes orbDrift1 {
@@ -398,6 +414,144 @@ body {
 }
 
 /* ============================================
+   DASHBOARD — ambient background
+   ============================================ */
+.dashboard-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.dashboard-ambient::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent), 0.06) 0%, transparent 70%);
+  animation: orbDrift1 20s ease-in-out infinite;
+}
+
+.dashboard-ambient::after {
+  content: '';
+  position: absolute;
+  bottom: -200px;
+  left: -100px;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 100, 255, 0.04) 0%, transparent 70%);
+  animation: orbDrift2 25s ease-in-out infinite;
+}
+
+/* ============================================
+   CHAT SIDECAR
+   ============================================ */
+.chat-sidecar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  background: rgba(5, 5, 10, 0.95);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-left: 1px solid #222;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+  transition: transform 300ms ease-out;
+}
+
+.chat-sidecar.closed {
+  transform: translateX(100%);
+  pointer-events: none;
+}
+
+.chat-sidecar.open {
+  transform: translateX(0);
+}
+
+/* Resize handle */
+.sidecar-resize-handle {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 51;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidecar-resize-handle::after {
+  content: '';
+  width: 2px;
+  height: 40px;
+  border-radius: 1px;
+  background: rgba(var(--accent), 0);
+  transition: background 0.15s;
+}
+
+.sidecar-resize-handle:hover::after {
+  background: rgba(var(--accent), 0.3);
+}
+
+.sidecar-resize-handle:active::after {
+  background: rgba(var(--accent), 0.5);
+}
+
+/* Sidecar backdrop */
+.sidecar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: 40;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+
+.sidecar-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============================================
+   POSITION CARDS
+   ============================================ */
+.position-card {
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.position-card:hover {
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   SHIMMER — loading placeholders
+   ============================================ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #111 25%, #1a1a1a 50%, #111 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* ============================================
    LANDING PAGE
    ============================================ */
 .landing-root {
@@ -441,12 +595,12 @@ body {
 
 #intro-overlay #main-tagline {
   position: absolute;
-  top: 48%;
+  top: 44%;
   left: 50%;
   transform: translate(-50%, -50%);
   white-space: nowrap;
   font-family: var(--font-space-grotesk);
-  font-size: clamp(1rem, 2vw, 1.5rem);
+  font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 300;
   color: #999;
   line-height: 1.5;
@@ -455,7 +609,7 @@ body {
 
 #enter-btn {
   position: absolute;
-  top: 56%;
+  top: 58%;
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 0.75rem 2.5rem;
@@ -490,7 +644,7 @@ body {
 
 .hero-title-text {
   position: absolute;
-  top: 86%;
+  top: 84%;
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: var(--font-space-grotesk);
@@ -511,8 +665,13 @@ body {
   background: linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.65) 100%);
 }
 
-#scroll-sections > section#how-it-works {
-  background: rgba(0,0,0,0.7);
+#scroll-sections > section#how-it-works.scroll-section {
+  background: rgba(0,0,0,0.82);
+  min-height: auto !important;
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+  justify-content: flex-start !important;
+  overflow: visible;
 }
 
 #scroll-sections > section#demo {
@@ -562,6 +721,9 @@ body {
 [data-animate].visible .step-card:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
 [data-animate].visible .step-card:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.3s; }
 [data-animate].visible .step-card:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.5s; }
+[data-animate].visible .step-card:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 0.7s; }
+[data-animate].visible .step-card:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 0.9s; }
+[data-animate].visible .step-card:nth-child(6) { opacity: 1; transform: translateY(0); transition-delay: 1.1s; }
 
 /* Terminal */
 .terminal-glow {

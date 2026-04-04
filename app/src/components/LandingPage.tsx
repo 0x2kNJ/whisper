@@ -133,7 +133,7 @@ export default function LandingPage() {
     }
     lenisFrameId = requestAnimationFrame(raf)
 
-    // Lock scroll initially
+    // Lock scroll initially (may be unlocked by skip-intro below)
     document.body.style.overflow = 'hidden'
 
     // Scroll fade handler
@@ -255,6 +255,8 @@ export default function LandingPage() {
       transition: opacity 0.6s ease;
     `
     scrollIndicator.addEventListener('click', () => {
+      // Unlock scroll in case it's still locked from intro
+      document.body.style.overflow = ''
       // Find all scroll sections and determine which one to scroll to next
       const sections = container.querySelectorAll('.scroll-section')
       const currentScroll = window.scrollY + window.innerHeight
@@ -293,7 +295,7 @@ export default function LandingPage() {
       }, 1500)
 
       setTimeout(() => introOverlay.remove(), 3000)
-      setTimeout(() => { document.body.style.overflow = '' }, 3000)
+      setTimeout(() => { document.body.style.overflow = '' }, 1000)
     }
     enterBtn.addEventListener('click', handleEnter)
 
@@ -312,6 +314,18 @@ export default function LandingPage() {
       }
     }
     window.addEventListener('scroll', handleNavScroll, { passive: true })
+
+    // Skip intro if coming from chat (via ?skip-intro)
+    if (window.location.search.includes('skip-intro')) {
+      introOverlay.remove()
+      clearInterval(typeInterval)
+      document.body.style.overflow = ''
+      floatingNav.style.opacity = '1'
+      floatingNav.style.transform = 'translateY(0)'
+      floatingNav.style.pointerEvents = 'auto'
+      scrollIndicator.style.opacity = '1'
+      window.history.replaceState({}, '', '/')
+    }
 
     // ── CLEANUP ──
     cleanupRef.current = () => {
