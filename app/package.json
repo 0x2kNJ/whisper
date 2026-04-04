@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "cd ../agent && npx tsc --outDir dist",
     "dev": "next dev -p 5174",
+    "prebuild": "cd ../agent && npx tsc --outDir dist",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
