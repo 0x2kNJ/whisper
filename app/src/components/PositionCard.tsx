@@ -1,6 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+
 interface PositionCardProps {
+  id: string
   type: 'payroll' | 'escrow' | 'verification' | 'completed'
   title: string
   subtitle: string
@@ -11,6 +14,7 @@ interface PositionCardProps {
   badge?: string
   footer: string
   onClick?: () => void
+  onClose?: (id: string) => void
 }
 
 const colors = {
@@ -51,6 +55,7 @@ const colors = {
 const recipientColors = ['#2d4a3d', '#3d3a2d', '#2d3a4a', '#3d2d4a', '#4a3d2d']
 
 export default function PositionCard({
+  id,
   type,
   title,
   subtitle,
@@ -61,22 +66,30 @@ export default function PositionCard({
   badge,
   footer,
   onClick,
+  onClose,
 }: PositionCardProps) {
   const c = colors[type]
   const isCompleted = type === 'completed'
+  const [confirming, setConfirming] = useState(false)
+  const [closing, setClosing] = useState(false)
 
-  // Generate deterministic sparkline from title
-  const sparklineData = Array.from({ length: 14 }, (_, i) => {
-    const seed = title.charCodeAt(i % title.length) + i * 7
-    const active = seed % 3 !== 0 // ~66% of days have activity
-    if (!active) return 0
-    return 20 + (seed * 13) % 80 // height between 20-100%
-  })
+  // Generate deterministic sparkline — newer positions show less history
+  const createdDate = footer.match(/\d+\/\d+\/\d+/)
+  const isNew = createdDate && new Date(createdDate[0]).toDateString() === new Date().toDateString()
+
+  const sparklineData = isNew
+    ? Array.from({ length: 14 }, (_, i) => i === 13 ? 25 : 0) // just created — single bar
+    : Array.from({ length: 14 }, (_, i) => {
+        const seed = title.charCodeAt(i % title.length) + i * 7
+        const active = seed % 3 !== 0
+        if (!active) return 0
+        return 20 + (seed * 13) % 80
+      })
 
   return (
     <div
       onClick={onClick}
-      className="position-card"
+      className="position-card group relative"
       style={{
         background: c.bg,
         border: `1px solid ${c.border}`,
@@ -88,6 +101,36 @@ export default function PositionCard({
         ;(e.currentTarget as HTMLElement).style.borderColor = c.border
       }}
     >
+      {/* Confirm close overlay */}
+      {confirming && (
+        <div
+          className="absolute inset-0 z-10 rounded-[14px] flex flex-col items-center justify-center gap-3 backdrop-blur-sm"
+          style={{ background: 'rgba(0,0,0,0.85)' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-xs text-zinc-300">Close this position?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={async (e) => {
+                e.stopPropagation()
+                setClosing(true)
+                onClose?.(id)
+              }}
+              disabled={closing}
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+            >
+              {closing ? 'Closing...' : 'Close'}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setConfirming(false) }}
+              className="text-[11px] px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-zinc-400 hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-2.5">
         <span
@@ -97,12 +140,25 @@ export default function PositionCard({
           {type === 'payroll' ? 'Payroll' : type === 'escrow' ? 'Escrow' : type === 'verification' ? 'Verification' : 'Completed'}
           {!isCompleted && <span className="text-[9px] opacity-70">🔒</span>}
         </span>
-        <span
-          className="text-[10px] flex items-center gap-1"
-          style={{ color: c.text }}
-        >
-          {status}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-[10px] flex items-center gap-1"
+            style={{ color: c.text }}
+          >
+            {status}
+          </span>
+          {onClose && !isCompleted && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setConfirming(true) }}
+              className="w-5 h-5 rounded-md flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
+              title="Close position"
+            >
+              <svg viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Title */}

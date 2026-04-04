@@ -249,9 +249,10 @@ export default function DashboardPage() {
               <div className="shimmer h-[180px] rounded-[14px]" />
             </>
           ) : positions.length > 0 ? (
-            positions.map((pos) => (
+            positions.slice(0, 3).map((pos) => (
               <PositionCard
                 key={pos.id}
+                id={pos.id}
                 type={mapPositionType(pos)}
                 title={pos.name}
                 subtitle={`${pos.recipients.length} recipient${pos.recipients.length !== 1 ? 's' : ''} · ${pos.schedule} · ${pos.privacyLevel === 'private' ? 'Private' : 'Public'}`}
@@ -261,6 +262,10 @@ export default function DashboardPage() {
                 recipients={pos.recipients.map(r => ({ name: r.name || r.address.slice(0, 6) }))}
                 footer={pos.lastExecutedAt ? `Last run: ${new Date(pos.lastExecutedAt).toLocaleDateString()}` : `Created: ${new Date(pos.createdAt).toLocaleDateString()}`}
                 onClick={() => handleAction(`Tell me about the ${pos.name} strategy`)}
+                onClose={async (id) => {
+                  await fetch(`/api/positions/${id}`, { method: 'DELETE' })
+                  setPositions((prev) => prev.filter((p) => p.id !== id))
+                }}
               />
             ))
           ) : (
