@@ -3,81 +3,20 @@
 import { useState, useRef, useEffect, useCallback, FormEvent } from 'react'
 import ChatMessage, { type ChatMessageData } from '@/components/ChatMessage'
 import { type ToolCallInfo } from '@/components/ToolCallCard'
-import { AGENT_ENDPOINT, PLACEHOLDER_BALANCES, PLACEHOLDER_WALLET } from '@/lib/config'
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import ChatSidebar, {
+  type ConversationSummary,
+  type BalanceInfo,
+} from '@/components/ChatSidebar'
+import {
+  AGENT_ENDPOINT,
+  BALANCES_ENDPOINT,
+  CONVERSATIONS_ENDPOINT,
+} from '@/lib/config'
 
 interface AgentHistoryMessage {
   role: 'user' | 'assistant'
   content: string
 }
-
-// ---------------------------------------------------------------------------
-// Sidebar balance card
-// ---------------------------------------------------------------------------
-
-function BalanceCard() {
-  return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col gap-0 border-r border-[#111] bg-[#000]">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 border-b border-[#111] px-5 py-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff]">
-          W
-        </div>
-        <span className="text-sm font-semibold tracking-wide text-white">Whisper</span>
-        <span className="ml-auto rounded bg-[#0a0a0a] border border-[#222] px-1.5 py-0.5 text-[9px] font-mono text-zinc-600 tracking-widest uppercase">
-          testnet
-        </span>
-      </div>
-
-      {/* Wallet address */}
-      <div className="border-b border-[#111] px-5 py-4">
-        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-1.5">
-          Private wallet
-        </div>
-        <div className="font-mono text-xs text-zinc-400">{PLACEHOLDER_WALLET}</div>
-        <div className="mt-1 flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] text-zinc-600">Connected</span>
-        </div>
-      </div>
-
-      {/* Private balances */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
-        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-3">
-          Private balances
-        </div>
-        <div className="flex flex-col gap-2">
-          {PLACEHOLDER_BALANCES.map((b, i) => (
-            <div
-              key={i}
-              className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2.5"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white">{b.token}</span>
-                <span className="text-xs font-mono text-zinc-300">{b.amount}</span>
-              </div>
-              <div className="mt-0.5 text-[10px] text-zinc-600">{b.chain}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Footer notice */}
-      <div className="border-t border-[#111] px-5 py-3">
-        <p className="text-[10px] text-zinc-700 leading-relaxed">
-          Balances are shielded via Unlink zero-knowledge proofs. Not visible on-chain.
-        </p>
-      </div>
-    </aside>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Thinking indicator
-// ---------------------------------------------------------------------------
 
 function ThinkingIndicator() {
   return (
@@ -95,20 +34,12 @@ function ThinkingIndicator() {
   )
 }
 
-// ---------------------------------------------------------------------------
-// Suggested prompts
-// ---------------------------------------------------------------------------
-
 const SUGGESTED_PROMPTS = [
-  'Pay my team privately 🔒: Alice 0.2 USDC, Bob 0.15 USDC, Charlie 0.1 USDC',
-  'Set up a private weekly payroll strategy 🔒 for the engineering team',
-  'Create a private escrow 🔒 for Dave: 0.5 USDC, release when ETH > $4k',
-  'Private swap 🔒 0.1 USDC → ETH for Bob + send Alice 0.05 USDC privately',
+  'Pay my team privately \u{1F512}: Alice 0.2 USDC, Bob 0.15 USDC, Charlie 0.1 USDC',
+  'Set up a private weekly payroll strategy \u{1F512} for the engineering team',
+  'Create a private escrow \u{1F512} for Dave: 0.5 USDC, release when ETH > $4k',
+  'Private swap \u{1F512} 0.1 USDC \u2192 ETH for Bob + send Alice 0.05 USDC privately',
 ]
-
-// ---------------------------------------------------------------------------
-// Main chat page
-// ---------------------------------------------------------------------------
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessageData[]>([])
@@ -119,16 +50,102 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  // Auto-scroll to bottom on new messages
+  const [conversations, setConversations] = useState<ConversationSummary[]>([])
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+
+  const [balances, setBalances] = useState<BalanceInfo[]>([])
+  const [wallet, setWallet] = useState<string | null>(null)
+  const [balancesLoading, setBalancesLoading] = useState(true)
+
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const fetchBalances = useCallback(async () => {
+    try {
+      setBalancesLoading(true)
+      const res = await fetch(BALANCES_ENDPOINT)
+      if (res.ok) {
+        const data = await res.json()
+        setBalances(data.balances ?? [])
+        setWallet(data.wallet ?? null)
+      }
+    } catch {
+    } finally {
+      setBalancesLoading(false)
+    }
+  }, [])
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch(CONVERSATIONS_ENDPOINT)
+      if (res.ok) {
+        const data = await res.json()
+        setConversations(data.conversations ?? [])
+      }
+    } catch {
+    }
+  }, [])
+
+  const loadConversation = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`${CONVERSATIONS_ENDPOINT}/${id}`)
+      if (!res.ok) return
+
+      const data = await res.json()
+      const loadedMessages: ChatMessageData[] = data.messages.map(
+        (m: { id: string; role: string; text: string; tool_calls: unknown[] }) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          text: m.text,
+          toolCalls: m.tool_calls as ToolCallInfo[],
+          streaming: false,
+        }),
+      )
+
+      const history: AgentHistoryMessage[] = data.messages
+        .filter((m: { role: string; text: string }) => m.text)
+        .map((m: { role: string; text: string }) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.text,
+        }))
+
+      setMessages(loadedMessages)
+      setAgentHistory(history)
+      setActiveConversationId(id)
+    } catch {
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchBalances()
+    fetchConversations()
+  }, [fetchBalances, fetchConversations])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isThinking])
 
-  // Auto-resize textarea
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setInput(e.target.value)
     e.target.style.height = 'auto'
     e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`
+  }
+
+  function handleNewChat() {
+    setMessages([])
+    setAgentHistory([])
+    setActiveConversationId(null)
+    inputRef.current?.focus()
+  }
+
+  async function handleDeleteConversation(id: string) {
+    try {
+      await fetch(`${CONVERSATIONS_ENDPOINT}/${id}`, { method: 'DELETE' })
+      setConversations((prev) => prev.filter((c) => c.id !== id))
+      if (activeConversationId === id) {
+        handleNewChat()
+      }
+    } catch {
+    }
   }
 
   const sendMessage = useCallback(
@@ -141,29 +158,41 @@ export default function ChatPage() {
         inputRef.current.style.height = 'auto'
       }
 
-      // Add user message to UI
+      let convId = activeConversationId
+      if (!convId) {
+        try {
+          const res = await fetch(CONVERSATIONS_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: userText.slice(0, 50) }),
+          })
+          if (res.ok) {
+            const data = await res.json()
+            convId = data.id
+            setActiveConversationId(convId)
+            setConversations((prev) => [
+              { id: data.id, title: data.title, created_at: Date.now(), updated_at: Date.now() },
+              ...prev,
+            ])
+          }
+        } catch {
+        }
+      }
+
       const userMsgId = `user-${Date.now()}`
       setMessages((prev) => [
         ...prev,
         { id: userMsgId, role: 'user', text: userText },
       ])
 
-      // Prepare assistant message placeholder
       const assistantMsgId = `assistant-${Date.now()}`
       setMessages((prev) => [
         ...prev,
-        {
-          id: assistantMsgId,
-          role: 'assistant',
-          text: '',
-          toolCalls: [],
-          streaming: true,
-        },
+        { id: assistantMsgId, role: 'assistant', text: '', toolCalls: [], streaming: true },
       ])
 
       setIsThinking(true)
 
-      // Abort previous request if any
       abortRef.current?.abort()
       const controller = new AbortController()
       abortRef.current = controller
@@ -188,7 +217,6 @@ export default function ChatPage() {
         let finalResponse = ''
         const finalToolCalls: ToolCallInfo[] = []
 
-        // Parse SSE stream
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
@@ -222,8 +250,8 @@ export default function ChatPage() {
             }
 
             if (eventType === 'text') {
-              const { text } = parsed as { text: string }
-              finalResponse += text
+              const { text: t } = parsed as { text: string }
+              finalResponse += t
               setIsThinking(false)
               setMessages((prev) =>
                 prev.map((m) =>
@@ -248,7 +276,6 @@ export default function ChatPage() {
                 toolCalls: ToolCallInfo[]
               }
 
-              // Use final response from done event if we haven't streamed text yet
               if (!finalResponse && response) {
                 finalResponse = response
               }
@@ -266,22 +293,40 @@ export default function ChatPage() {
                 ),
               )
 
-              // Update conversation history for next turn
               setAgentHistory((prev) => [
                 ...prev,
                 { role: 'user', content: userText },
                 { role: 'assistant', content: finalResponse },
               ])
+
+              if (convId) {
+                try {
+                  await fetch(`${CONVERSATIONS_ENDPOINT}/${convId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      messages: [
+                        { role: 'user', text: userText, toolCalls: [] },
+                        {
+                          role: 'assistant',
+                          text: finalResponse,
+                          toolCalls: toolCalls ?? finalToolCalls,
+                        },
+                      ],
+                    }),
+                  })
+                  fetchConversations()
+                } catch {
+                }
+              }
+
+              fetchBalances()
             } else if (eventType === 'error') {
               const { error } = parsed as { error: string }
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
-                    ? {
-                        ...m,
-                        text: `Error: ${error}`,
-                        streaming: false,
-                      }
+                    ? { ...m, text: `Error: ${error}`, streaming: false }
                     : m,
                 ),
               )
@@ -311,7 +356,7 @@ export default function ChatPage() {
         inputRef.current?.focus()
       }
     },
-    [agentHistory, isThinking],
+    [agentHistory, isThinking, activeConversationId, fetchBalances, fetchConversations],
   )
 
   function handleSubmit(e: FormEvent) {
@@ -330,18 +375,30 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-black overflow-hidden">
-      {/* Sidebar */}
-      <BalanceCard />
+      <ChatSidebar
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onNewChat={handleNewChat}
+        onSelectConversation={loadConversation}
+        onDeleteConversation={handleDeleteConversation}
+        balances={balances}
+        wallet={wallet}
+        balancesLoading={balancesLoading}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {/* Main chat area */}
       <div className="flex flex-1 flex-col min-w-0">
-        {/* Top bar */}
         <header className="flex items-center justify-between border-b border-[#111] px-6 py-4 shrink-0">
           <div className="flex items-center gap-3">
-            {/* Mobile logo */}
-            <div className="flex md:hidden h-6 w-6 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[9px] font-bold tracking-widest text-[#c8d8ff]">
-              W
-            </div>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex md:hidden h-8 w-8 items-center justify-center rounded-lg border border-[#222] bg-[#0a0a0a] text-zinc-400 hover:text-white transition-colors"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
             <div>
               <span className="text-sm font-medium text-white">Treasury Agent</span>
               <span className="ml-2 text-xs text-zinc-600">Base Sepolia</span>
@@ -353,24 +410,20 @@ export default function ChatPage() {
           </div>
         </header>
 
-        {/* Messages area */}
         <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
           {isEmpty ? (
-            /* Empty state */
             <div className="flex flex-col items-center justify-center h-full gap-8 max-w-lg mx-auto text-center animate-fade-in">
               <div>
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-lg font-bold tracking-widest text-[#c8d8ff]">
                   W
                 </div>
-                <h1 className="text-xl font-semibold text-white mb-2">
-                  Whisper
-                </h1>
+                <h1 className="text-xl font-semibold text-white mb-2">Whisper</h1>
                 <p className="text-sm text-zinc-500 leading-relaxed">
-                  Your private AI treasury agent. All transactions are shielded with zero-knowledge proofs on Base Sepolia.
+                  Your private AI treasury agent. All transactions are shielded
+                  with zero-knowledge proofs on Base Sepolia.
                 </p>
               </div>
 
-              {/* Suggested prompts */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
                   <button
@@ -385,13 +438,11 @@ export default function ChatPage() {
               </div>
             </div>
           ) : (
-            /* Messages list */
             <div className="flex flex-col gap-5 max-w-3xl mx-auto">
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} />
               ))}
 
-              {/* Thinking indicator shows only if thinking and assistant hasn't started streaming text */}
               {isThinking &&
                 !messages.find(
                   (m) =>
@@ -405,7 +456,6 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Input bar */}
         <div className="shrink-0 border-t border-[#111] bg-black px-4 md:px-8 py-4">
           <form
             onSubmit={handleSubmit}
@@ -432,38 +482,13 @@ export default function ChatPage() {
               aria-label="Send message"
             >
               {isThinking ? (
-                <svg
-                  className="h-4 w-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                  />
+                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                 </svg>
               ) : (
-                <svg
-                  className="h-4 w-4 translate-x-px"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 12h14M12 5l7 7-7 7"
-                  />
+                <svg className="h-4 w-4 translate-x-px" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               )}
             </button>
