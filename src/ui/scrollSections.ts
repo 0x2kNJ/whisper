@@ -162,6 +162,71 @@ export function createScrollSections(): HTMLElement {
   innerD.appendChild(logoRow)
   container.appendChild(sectionD)
 
+  // Section: Launch App CTA
+  const sectionCTA = createSection('launch-cta')
+  sectionCTA.style.minHeight = '60vh'
+  sectionCTA.style.background = 'transparent'
+
+  const ctaInner = sectionCTA.querySelector('.section-inner') as HTMLElement
+  ctaInner.style.cssText = 'max-width:900px;width:100%;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2rem;'
+
+  const ctaRule = document.createElement('div')
+  ctaRule.className = 'section-rule'
+  ctaRule.style.cssText = 'width:40px;height:1px;background:rgba(200,216,255,0.3);'
+
+  const ctaHeadline = document.createElement('h2')
+  ctaHeadline.className = 'section-headline'
+  ctaHeadline.style.cssText = 'font-size:clamp(1.5rem,4vw,2.5rem);font-weight:300;color:rgba(255,255,255,0.95);line-height:1.2;letter-spacing:-0.02em;'
+  ctaHeadline.textContent = 'Ready to whisper?'
+
+  const ctaSub = document.createElement('p')
+  ctaSub.className = 'section-body'
+  ctaSub.style.cssText = 'color:#666;font-size:clamp(0.9rem,1.2vw,1.05rem);font-weight:300;line-height:1.7;max-width:440px;'
+  ctaSub.textContent = 'Step into the treasury agent. Speak plainly, move privately.'
+
+  const ctaBtn = document.createElement('a')
+  ctaBtn.href = 'http://localhost:3000/chat'
+  ctaBtn.className = 'section-body'
+  ctaBtn.style.cssText = `
+    display:inline-flex;align-items:center;gap:0.75rem;
+    padding:1rem 2.5rem;
+    background:rgba(200,216,255,0.08);
+    border:1px solid rgba(200,216,255,0.15);
+    border-radius:9999px;
+    color:#c8d8ff;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:0.95rem;font-weight:400;letter-spacing:0.05em;
+    text-decoration:none;
+    cursor:pointer;
+    transition:all 0.4s ease;
+    backdrop-filter:blur(8px);
+  `
+  ctaBtn.textContent = 'Launch App'
+
+  const ctaArrow = document.createElement('span')
+  ctaArrow.textContent = '→'
+  ctaArrow.style.cssText = 'transition:transform 0.3s ease;display:inline-block;'
+  ctaBtn.appendChild(ctaArrow)
+
+  ctaBtn.addEventListener('mouseenter', () => {
+    ctaBtn.style.background = 'rgba(200,216,255,0.15)'
+    ctaBtn.style.borderColor = 'rgba(200,216,255,0.35)'
+    ctaBtn.style.boxShadow = '0 0 30px rgba(200,216,255,0.1)'
+    ctaArrow.style.transform = 'translateX(4px)'
+  })
+  ctaBtn.addEventListener('mouseleave', () => {
+    ctaBtn.style.background = 'rgba(200,216,255,0.08)'
+    ctaBtn.style.borderColor = 'rgba(200,216,255,0.15)'
+    ctaBtn.style.boxShadow = 'none'
+    ctaArrow.style.transform = 'translateX(0)'
+  })
+
+  ctaInner.appendChild(ctaRule)
+  ctaInner.appendChild(ctaHeadline)
+  ctaInner.appendChild(ctaSub)
+  ctaInner.appendChild(ctaBtn)
+  container.appendChild(sectionCTA)
+
   // Section E: Transaction Proof
   const sectionE = createSection('proof')
   sectionE.style.minHeight = '50vh'

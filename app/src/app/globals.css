@@ -7,6 +7,7 @@
 :root {
   --font-space-grotesk: 'Space Grotesk', system-ui, sans-serif;
   --font-mono: 'ui-monospace', 'SFMono-Regular', 'Menlo', monospace;
+  --accent: 200, 216, 255;
 }
 
 * {
@@ -45,11 +46,267 @@ body {
 
 /* Selection */
 ::selection {
-  background: rgba(200, 216, 255, 0.2);
+  background: rgba(var(--accent), 0.2);
   color: #fff;
 }
 
-/* Pulsing dots animation for thinking state */
+/* ============================================
+   AMBIENT BACKGROUND — floating gradient orbs
+   ============================================ */
+.chat-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.chat-ambient::before,
+.chat-ambient::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.4;
+  will-change: transform;
+}
+
+/* Primary orb — top-right, slow drift */
+.chat-ambient::before {
+  width: 600px;
+  height: 600px;
+  top: -15%;
+  right: -10%;
+  background: radial-gradient(circle, rgba(var(--accent), 0.12) 0%, transparent 70%);
+  animation: orbDrift1 20s ease-in-out infinite;
+}
+
+/* Secondary orb — bottom-left, offset timing */
+.chat-ambient::after {
+  width: 500px;
+  height: 500px;
+  bottom: -10%;
+  left: -5%;
+  background: radial-gradient(circle, rgba(120, 100, 255, 0.08) 0%, transparent 70%);
+  animation: orbDrift2 25s ease-in-out infinite;
+}
+
+/* Third orb via extra element */
+.chat-ambient-orb3 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 40%;
+  left: 50%;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.3;
+  background: radial-gradient(circle, rgba(var(--accent), 0.06) 0%, transparent 70%);
+  animation: orbDrift3 30s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 30px) scale(1.05); }
+  66% { transform: translate(20px, -20px) scale(0.95); }
+}
+
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.92); }
+}
+
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(-50%, 0) scale(1); }
+  50% { transform: translate(-50%, -30px) scale(1.1); }
+}
+
+/* Noise overlay — subtle grain texture */
+.chat-noise {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* Subtle grid lines */
+.chat-grid {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image:
+    linear-gradient(rgba(var(--accent), 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--accent), 0.3) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 30%, transparent 70%);
+}
+
+/* ============================================
+   GLASSMORPHISM PANELS
+   ============================================ */
+.glass-panel {
+  background: rgba(8, 8, 12, 0.6) !important;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+.glass-sidebar {
+  background: rgba(5, 5, 10, 0.7) !important;
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.glass-input {
+  background: rgba(10, 10, 15, 0.5) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(var(--accent), 0.08) !important;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.glass-input:focus {
+  border-color: rgba(var(--accent), 0.2) !important;
+  box-shadow: 0 0 20px rgba(var(--accent), 0.05);
+}
+
+/* ============================================
+   W LOGO GLOW
+   ============================================ */
+.w-logo-glow {
+  position: relative;
+}
+
+.w-logo-glow::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: rgba(var(--accent), 0.15);
+  filter: blur(8px);
+  opacity: 0;
+  transition: opacity 0.5s;
+  z-index: -1;
+}
+
+.w-logo-glow:hover::after,
+.w-logo-glow.active::after {
+  opacity: 1;
+}
+
+/* ============================================
+   MESSAGE ANIMATIONS
+   ============================================ */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: messageSlideIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* ============================================
+   EMPTY STATE — dramatic hero treatment
+   ============================================ */
+.empty-state-glow {
+  position: relative;
+}
+
+.empty-state-glow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  transform: translate(-50%, -55%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--accent), 0.08) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================
+   SUGGESTED PROMPT CARDS — hover glow
+   ============================================ */
+.prompt-card {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.prompt-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(var(--accent), 0.1), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: -1;
+}
+
+.prompt-card:hover::before {
+  opacity: 1;
+}
+
+.prompt-card:hover {
+  border-color: rgba(var(--accent), 0.2) !important;
+  box-shadow: 0 0 20px rgba(var(--accent), 0.05);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   STATUS PULSE — enhanced green dot
+   ============================================ */
+.status-dot {
+  position: relative;
+}
+
+.status-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: rgb(16, 185, 129);
+  animation: statusPulse 2s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(2); }
+}
+
+/* ============================================
+   THINKING INDICATOR
+   ============================================ */
 @keyframes thinkingDot {
   0%, 80%, 100% {
     opacity: 0.2;
@@ -65,7 +322,9 @@ body {
 .thinking-dot:nth-child(2) { animation: thinkingDot 1.4s ease-in-out infinite 0.2s; }
 .thinking-dot:nth-child(3) { animation: thinkingDot 1.4s ease-in-out infinite 0.4s; }
 
-/* Prose-like formatting for assistant message text */
+/* ============================================
+   PROSE — assistant message formatting
+   ============================================ */
 .message-content p {
   margin-bottom: 0.75rem;
 }
@@ -75,22 +334,23 @@ body {
 }
 
 .message-content code {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 3px;
-  padding: 1px 5px;
+  background: rgba(var(--accent), 0.08);
+  border: 1px solid rgba(var(--accent), 0.12);
+  border-radius: 4px;
+  padding: 1px 6px;
   font-size: 0.85em;
   font-family: var(--font-mono);
   color: #c8d8ff;
 }
 
 .message-content pre {
-  background: #0a0a0a;
-  border: 1px solid #222;
-  border-radius: 6px;
-  padding: 12px 16px;
+  background: rgba(5, 5, 10, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 14px 18px;
   overflow-x: auto;
   margin: 0.75rem 0;
+  backdrop-filter: blur(8px);
 }
 
 .message-content pre code {
@@ -119,4 +379,20 @@ body {
   margin-bottom: 0.5rem;
   margin-top: 1rem;
   color: #fff;
+}
+
+/* ============================================
+   USER MESSAGE — subtle accent border
+   ============================================ */
+.user-message-bubble {
+  background: rgba(var(--accent), 0.06);
+  border: 1px solid rgba(var(--accent), 0.1);
+}
+
+/* ============================================
+   ASSISTANT MESSAGE — glass card
+   ============================================ */
+.assistant-message-bubble {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }

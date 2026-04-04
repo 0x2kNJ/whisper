@@ -20,26 +20,26 @@ interface AgentHistoryMessage {
 
 function BalanceCard() {
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col gap-0 border-r border-[#111] bg-[#000]">
+    <aside className="hidden md:flex w-64 shrink-0 flex-col gap-0 border-r glass-sidebar relative z-10">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 border-b border-[#111] px-5 py-5">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff]">
+      <div className="flex items-center gap-2.5 border-b border-[rgba(255,255,255,0.04)] px-5 py-5">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-[10px] font-bold tracking-widest text-[#c8d8ff] w-logo-glow active">
           W
         </div>
         <span className="text-sm font-semibold tracking-wide text-white">Whisper</span>
-        <span className="ml-auto rounded bg-[#0a0a0a] border border-[#222] px-1.5 py-0.5 text-[9px] font-mono text-zinc-600 tracking-widest uppercase">
+        <span className="ml-auto rounded bg-[rgba(200,216,255,0.04)] border border-[rgba(200,216,255,0.08)] px-1.5 py-0.5 text-[9px] font-mono text-[#c8d8ff]/40 tracking-widest uppercase">
           testnet
         </span>
       </div>
 
       {/* Wallet address */}
-      <div className="border-b border-[#111] px-5 py-4">
+      <div className="border-b border-[rgba(255,255,255,0.04)] px-5 py-4">
         <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-1.5">
           Private wallet
         </div>
         <div className="font-mono text-xs text-zinc-400">{PLACEHOLDER_WALLET}</div>
         <div className="mt-1 flex items-center gap-1.5">
-          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 status-dot" />
           <span className="text-[10px] text-zinc-600">Connected</span>
         </div>
       </div>
@@ -53,7 +53,7 @@ function BalanceCard() {
           {PLACEHOLDER_BALANCES.map((b, i) => (
             <div
               key={i}
-              className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2.5"
+              className="rounded-lg border border-[rgba(255,255,255,0.04)] bg-[rgba(10,10,15,0.4)] backdrop-blur-sm px-3 py-2.5 transition-colors hover:border-[rgba(200,216,255,0.1)]"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">{b.token}</span>
@@ -66,9 +66,9 @@ function BalanceCard() {
       </div>
 
       {/* Footer notice */}
-      <div className="border-t border-[#111] px-5 py-3">
-        <p className="text-[10px] text-zinc-700 leading-relaxed">
-          Balances are shielded via Unlink zero-knowledge proofs. Not visible on-chain.
+      <div className="border-t border-[rgba(255,255,255,0.04)] px-5 py-3">
+        <p className="text-[10px] text-zinc-600 leading-relaxed">
+          Balances shielded via Unlink zero-knowledge proofs. Not visible on-chain.
         </p>
       </div>
     </aside>
@@ -81,11 +81,11 @@ function BalanceCard() {
 
 function ThinkingIndicator() {
   return (
-    <div className="flex items-center gap-3 animate-fade-in">
-      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[10px] font-bold tracking-widest text-[#c8d8ff]">
+    <div className="flex items-center gap-3 message-enter">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-[10px] font-bold tracking-widest text-[#c8d8ff] w-logo-glow active">
         W
       </div>
-      <div className="flex items-center gap-1.5 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5">
+      <div className="flex items-center gap-1.5 rounded-xl border border-[rgba(255,255,255,0.04)] bg-[rgba(10,10,15,0.4)] backdrop-blur-sm px-4 py-2.5">
         <span className="text-xs text-zinc-500 mr-1">Whisper is thinking</span>
         <span className="thinking-dot h-1 w-1 rounded-full bg-[#c8d8ff]" />
         <span className="thinking-dot h-1 w-1 rounded-full bg-[#c8d8ff]" />
@@ -329,55 +329,62 @@ export default function ChatPage() {
   const isEmpty = messages.length === 0
 
   return (
-    <div className="flex h-screen bg-black overflow-hidden">
+    <div className="relative flex h-screen overflow-hidden">
+      {/* Ambient background layers */}
+      <div className="chat-ambient">
+        <div className="chat-ambient-orb3" />
+      </div>
+      <div className="chat-noise" />
+      <div className="chat-grid" />
+
       {/* Sidebar */}
       <BalanceCard />
 
       {/* Main chat area */}
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Top bar */}
-        <header className="flex items-center justify-between border-b border-[#111] px-6 py-4 shrink-0">
+      <div className="relative z-10 flex flex-1 flex-col min-w-0">
+        {/* Top bar — glass */}
+        <header className="glass-panel flex items-center justify-between border-b px-6 py-4 shrink-0">
           <div className="flex items-center gap-3">
             {/* Mobile logo */}
-            <div className="flex md:hidden h-6 w-6 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-[9px] font-bold tracking-widest text-[#c8d8ff]">
+            <div className="flex md:hidden h-6 w-6 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-[9px] font-bold tracking-widest text-[#c8d8ff] w-logo-glow">
               W
             </div>
             <div>
               <span className="text-sm font-medium text-white">Treasury Agent</span>
-              <span className="ml-2 text-xs text-zinc-600">Base Sepolia</span>
+              <span className="ml-2 rounded border border-[rgba(200,216,255,0.08)] bg-[rgba(200,216,255,0.04)] px-1.5 py-0.5 text-[10px] text-[#c8d8ff]/60">Base Sepolia</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span className="text-xs text-zinc-600">Online</span>
+            <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 status-dot" />
+            <span className="text-xs text-zinc-500">Online</span>
           </div>
         </header>
 
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6">
           {isEmpty ? (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center h-full gap-8 max-w-lg mx-auto text-center animate-fade-in">
+            /* Empty state — dramatic */
+            <div className="flex flex-col items-center justify-center h-full gap-8 max-w-lg mx-auto text-center animate-fade-in empty-state-glow">
               <div>
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[#333] bg-[#0a0a0a] text-lg font-bold tracking-widest text-[#c8d8ff]">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-xl font-bold tracking-widest text-[#c8d8ff] w-logo-glow active">
                   W
                 </div>
-                <h1 className="text-xl font-semibold text-white mb-2">
+                <h1 className="text-2xl font-light text-white mb-2 tracking-tight">
                   Whisper
                 </h1>
-                <p className="text-sm text-zinc-500 leading-relaxed">
-                  Your private AI treasury agent. All transactions are shielded with zero-knowledge proofs on Base Sepolia.
+                <p className="text-sm text-zinc-500 leading-relaxed max-w-sm mx-auto">
+                  Your private AI treasury agent. Transactions shielded with zero-knowledge proofs.
                 </p>
               </div>
 
               {/* Suggested prompts */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
                 {SUGGESTED_PROMPTS.map((prompt, i) => (
                   <button
                     key={i}
                     onClick={() => sendMessage(prompt)}
                     disabled={isThinking}
-                    className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3 text-left text-xs text-zinc-400 hover:border-[#333] hover:text-zinc-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="prompt-card rounded-xl border border-[rgba(255,255,255,0.04)] bg-[rgba(10,10,15,0.4)] backdrop-blur-sm px-4 py-3.5 text-left text-xs text-zinc-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {prompt}
                   </button>
@@ -388,7 +395,9 @@ export default function ChatPage() {
             /* Messages list */
             <div className="flex flex-col gap-5 max-w-3xl mx-auto">
               {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={msg} />
+                <div key={msg.id} className="message-enter">
+                  <ChatMessage message={msg} />
+                </div>
               ))}
 
               {/* Thinking indicator shows only if thinking and assistant hasn't started streaming text */}
@@ -405,8 +414,8 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Input bar */}
-        <div className="shrink-0 border-t border-[#111] bg-black px-4 md:px-8 py-4">
+        {/* Input bar — glass */}
+        <div className="shrink-0 border-t border-[rgba(255,255,255,0.04)] glass-panel px-4 md:px-8 py-4">
           <form
             onSubmit={handleSubmit}
             className="flex items-end gap-3 max-w-3xl mx-auto"
@@ -420,7 +429,7 @@ export default function ChatPage() {
                 placeholder="Ask Whisper anything..."
                 disabled={isThinking}
                 rows={1}
-                className="w-full resize-none overflow-hidden rounded-xl border border-[#222] bg-[#0a0a0a] px-4 py-3 pr-4 text-sm text-white placeholder-zinc-600 outline-none transition-colors focus:border-[#333] disabled:opacity-60 disabled:cursor-not-allowed leading-relaxed"
+                className="glass-input w-full resize-none overflow-hidden rounded-xl border px-4 py-3 pr-4 text-sm text-white placeholder-zinc-600 outline-none disabled:opacity-60 disabled:cursor-not-allowed leading-relaxed"
                 style={{ minHeight: '44px', maxHeight: '160px' }}
               />
             </div>
@@ -428,7 +437,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={!input.trim() || isThinking}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#222] bg-[#0a0a0a] text-[#c8d8ff] transition-all hover:border-[#333] hover:bg-[#111] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[rgba(200,216,255,0.1)] bg-[rgba(200,216,255,0.05)] text-[#c8d8ff] transition-all hover:border-[rgba(200,216,255,0.25)] hover:bg-[rgba(200,216,255,0.1)] hover:shadow-[0_0_20px_rgba(200,216,255,0.08)] disabled:opacity-40 disabled:cursor-not-allowed"
               aria-label="Send message"
             >
               {isThinking ? (
@@ -469,7 +478,7 @@ export default function ChatPage() {
             </button>
           </form>
 
-          <p className="mt-2 text-center text-[10px] text-zinc-700 max-w-3xl mx-auto">
+          <p className="mt-2 text-center text-[10px] text-zinc-600 max-w-3xl mx-auto">
             Whisper operates on testnet. No real funds. Shift+Enter for new line.
           </p>
         </div>
