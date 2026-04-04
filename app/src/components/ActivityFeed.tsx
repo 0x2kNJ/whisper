@@ -111,18 +111,22 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
               )}
               <div className="text-[10px] text-zinc-500 flex items-center justify-end gap-1.5">
                 {formatRelativeTime(item.timestamp)}
-                {item.txHash && (
-                  <a
-                    href={`https://sepolia.basescan.org/tx/${item.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] transition-colors"
-                    title="View on BaseScan"
-                  >
-                    ↗
-                  </a>
-                )}
+                <a
+                  href={
+                    item.txHash?.startsWith('0x')
+                      ? item.type === 'escrow'
+                        ? `https://testnet.arcscan.io/tx/${item.txHash}`
+                        : `https://sepolia.basescan.org/tx/${item.txHash}`
+                      : 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482'
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] transition-colors"
+                  title={item.txHash?.startsWith('0x') ? 'View tx on explorer' : 'View Unlink pool on BaseScan'}
+                >
+                  ↗
+                </a>
               </div>
             </div>
           </div>

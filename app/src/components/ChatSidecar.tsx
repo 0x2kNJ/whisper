@@ -466,10 +466,10 @@ export default function ChatSidecar({
             <div className="grid grid-cols-1 gap-2 w-full max-w-[320px]">
               {[
                 { icon: '→', text: 'Pay alice.whisper.eth 0.001 USDC privately', badge: '🔒' },
+                { icon: '⊕', text: 'Setup payroll: alice and bob, 0.01 USDC each, monthly', badge: '🔒' },
                 { icon: '◷', text: 'Run payroll: alice and bob — 0.001 USDC each', badge: '🔒' },
                 { icon: '⊡', text: 'Create escrow for alice: 0.01 USDC, release when ETH > $4k', badge: '🔒' },
                 { icon: '◈', text: 'Verify income for alice.whisper.eth', badge: '🔒' },
-                { icon: '⇄', text: 'Rebalance treasury to 80% USDC / 20% WETH', badge: '🔒' },
               ].map((p, i) => (
                 <button
                   key={i}

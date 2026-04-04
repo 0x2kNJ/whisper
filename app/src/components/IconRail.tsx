@@ -1,12 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 
 interface IconRailProps {
   activePath: string
   onChatToggle: () => void
+  onOpenChatWithPrompt?: (prompt: string) => void
   isChatOpen: boolean
 }
+
+const CONTACTS = [
+  { name: 'Alice', ens: 'alice.whisper.eth' },
+  { name: 'Bob', ens: 'bob.whisper.eth' },
+  { name: 'Charlie', ens: 'charlie.whisper.eth' },
+]
 
 const navItems = [
   {
@@ -23,7 +31,9 @@ const navItems = [
   },
 ]
 
-export default function IconRail({ activePath, onChatToggle, isChatOpen }: IconRailProps) {
+export default function IconRail({ activePath, onChatToggle, onOpenChatWithPrompt, isChatOpen }: IconRailProps) {
+  const [showContacts, setShowContacts] = useState(false)
+
   return (
     <nav className="w-16 shrink-0 bg-[rgba(5,5,10,0.8)] backdrop-blur-xl border-r border-[rgba(255,255,255,0.04)] hidden sm:flex flex-col items-center py-4 gap-1 z-10">
       {/* Logo */}
@@ -61,6 +71,64 @@ export default function IconRail({ activePath, onChatToggle, isChatOpen }: IconR
           </Link>
         )
       })}
+
+      {/* Address Book */}
+      <div className="relative">
+        <button
+          onClick={() => setShowContacts(v => !v)}
+          title="Address Book"
+          className={`w-10 h-10 rounded-[10px] flex items-center justify-center transition-all duration-150 ${
+            showContacts
+              ? 'bg-[rgba(200,216,255,0.12)] text-[#c8d8ff]'
+              : 'text-zinc-500 hover:bg-[rgba(200,216,255,0.08)] hover:text-zinc-400'
+          }`}
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z" />
+          </svg>
+        </button>
+
+        {showContacts && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowContacts(false)} />
+            <div
+              className="absolute left-14 top-0 z-50 w-64 rounded-xl overflow-hidden shadow-2xl animate-fade-in"
+              style={{
+                background: 'rgba(10,10,15,0.95)',
+                border: '1px solid rgba(200,216,255,0.12)',
+                backdropFilter: 'blur(20px)',
+              }}
+            >
+              <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)]">
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500">Address Book</div>
+              </div>
+              <div className="py-1">
+                {CONTACTS.map((c) => (
+                  <button
+                    key={c.ens}
+                    onClick={() => {
+                      setShowContacts(false)
+                      onOpenChatWithPrompt?.(`Pay ${c.ens} 0.001 USDC privately`)
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-[rgba(200,216,255,0.06)] transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold"
+                        style={{ background: 'rgba(200,216,255,0.1)', color: '#c8d8ff' }}
+                      >
+                        {c.name[0]}
+                      </div>
+                      <span className="text-xs text-zinc-300">{c.name}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-600 font-mono">{c.ens}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Chat toggle */}
       <button

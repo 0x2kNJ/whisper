@@ -10,7 +10,34 @@ export interface ChatMessageData {
   streaming?: boolean
 }
 
-/** Format inline text: bold, links, newlines */
+/** Turn a 0x hash (full or truncated like 0x101d...6094) into an explorer link. */
+function autoLinkHash(text: string, key: number): React.ReactNode {
+  // Split on full hashes (0x + 64 hex chars) and truncated hashes (0x + hex + ... + hex)
+  const parts = text.split(/(0x[a-fA-F0-9]{6,64}(?:…|\.\.\.)[a-fA-F0-9]{4,}|0x[a-fA-F0-9]{64})/g)
+  if (parts.length === 1) return text
+
+  return parts.map((part, i) => {
+    // Full hash
+    if (/^0x[a-fA-F0-9]{64}$/.test(part)) {
+      return (
+        <a key={`${key}-hash-${i}`} href={`https://sepolia.basescan.org/tx/${part}`} target="_blank" rel="noopener noreferrer" className="text-[#c8d8ff] hover:underline transition-colors font-mono text-[0.9em]">
+          {part.slice(0, 6)}…{part.slice(-4)} ↗
+        </a>
+      )
+    }
+    // Truncated hash like 0x101d...6094
+    if (/^0x[a-fA-F0-9]{4,}(?:…|\.\.\.)[a-fA-F0-9]{4,}$/.test(part)) {
+      return (
+        <a key={`${key}-hash-${i}`} href="https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482" target="_blank" rel="noopener noreferrer" className="text-[#c8d8ff] hover:underline transition-colors font-mono text-[0.9em]">
+          {part} ↗
+        </a>
+      )
+    }
+    return part
+  })
+}
+
+/** Format inline text: bold, links, tx hashes, newlines */
 function formatInline(text: string, keyPrefix: string): React.ReactNode {
   if (!text) return null
   return text.split('\n').map((line, j, arr) => {
@@ -28,7 +55,8 @@ function formatInline(text: string, keyPrefix: string): React.ReactNode {
           </a>
         )
       }
-      return seg
+      // Auto-link 0x hashes
+      return autoLinkHash(seg, k)
     })
     return (
       <span key={`${keyPrefix}-${j}`}>
@@ -75,28 +103,30 @@ function formatText(text: string): React.ReactNode {
       )
     }
 
-    // Check if this chunk contains a markdown table
+    // Parse all markdown tables in this chunk (handles multiple tables)
     const lines = part.split('\n')
-    const tableStart = lines.findIndex((l) => l.trim().startsWith('|') && l.trim().endsWith('|'))
-    if (tableStart >= 0) {
-      // Find table extent
-      const tableLines: string[] = []
-      const beforeLines: string[] = lines.slice(0, tableStart)
-      let idx = tableStart
-      while (idx < lines.length && lines[idx].trim().startsWith('|')) {
-        tableLines.push(lines[idx])
-        idx++
-      }
-      const afterLines = lines.slice(idx)
+    const segments: React.ReactNode[] = []
+    let textBuf: string[] = []
+    let lineIdx = 0
 
-      // Parse table
-      const headerRow = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) || []
-      const dataRows = tableLines.slice(2).map((row) => row.split('|').filter(Boolean).map((c) => c.trim()))
-
-      return (
-        <span key={i}>
-          {beforeLines.length > 0 && formatInline(beforeLines.join('\n'), `${i}-before`)}
-          <table className="my-2 w-full text-xs border-collapse">
+    while (lineIdx < lines.length) {
+      const line = lines[lineIdx]
+      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+        // Flush text buffer
+        if (textBuf.length > 0) {
+          segments.push(formatInline(textBuf.join('\n'), `${i}-text-${lineIdx}`))
+          textBuf = []
+        }
+        // Collect table lines
+        const tableLines: string[] = []
+        while (lineIdx < lines.length && lines[lineIdx].trim().startsWith('|')) {
+          tableLines.push(lines[lineIdx])
+          lineIdx++
+        }
+        const headerRow = tableLines[0]?.split('|').filter(Boolean).map((c) => c.trim()) || []
+        const dataRows = tableLines.slice(2).map((row) => row.split('|').filter(Boolean).map((c) => c.trim()))
+        segments.push(
+          <table key={`${i}-table-${lineIdx}`} className="my-2 w-full text-xs border-collapse">
             <thead>
               <tr>
                 {headerRow.map((h, hi) => (
@@ -111,16 +141,24 @@ function formatText(text: string): React.ReactNode {
                 <tr key={ri}>
                   {row.map((cell, ci) => (
                     <td key={ci} className="text-zinc-300 px-2 py-1.5 border-b border-[#1a1a1a]">
-                      {formatInline(cell, `${i}-${ri}-${ci}`)}
+                      {formatInline(cell, `${i}-${lineIdx}-${ri}-${ci}`)}
                     </td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
-          {afterLines.length > 0 && formatInline(afterLines.join('\n'), `${i}-after`)}
-        </span>
-      )
+        )
+      } else {
+        textBuf.push(line)
+        lineIdx++
+      }
+    }
+    if (textBuf.length > 0) {
+      segments.push(formatInline(textBuf.join('\n'), `${i}-tail`))
+    }
+    if (segments.length > 0) {
+      return <span key={i}>{segments}</span>
     }
 
     // Regular text — handle bold, links, and newlines
