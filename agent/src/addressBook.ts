@@ -6,8 +6,9 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createPublicClient, http, normalize } from 'viem'
-import { sepolia } from 'viem/chains'
+import { createPublicClient, http } from 'viem'
+import { normalize } from 'viem/ens'
+import { mainnet } from 'viem/chains'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = join(__dirname, '..', 'data')
@@ -54,9 +55,9 @@ export async function saveAddress(name: string, address: string): Promise<void> 
  */
 export async function resolveENS(name: string): Promise<{ address: string | null; textRecords?: Record<string, string> }> {
   try {
-    const rpcUrl = process.env.ETH_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org'
+    const rpcUrl = process.env.ETH_RPC_URL || 'https://eth.drpc.org'
     const client = createPublicClient({
-      chain: sepolia,
+      chain: mainnet,
       transport: http(rpcUrl),
     })
 

@@ -42,7 +42,7 @@ import {
   type PayrollMessage,
   type EncryptedMessage,
 } from './messaging.js'
-import { saveAddress, getAddress, listAddresses } from './addressBook.js'
+import { saveAddress, getAddress, listAddresses, resolveENS } from './addressBook.js'
 import { dryRunPayroll } from './scheduler.js'
 import {
   createStrategy,
@@ -604,6 +604,22 @@ export const toolDefinitions = [
       type: 'object' as const,
       properties: {},
       required: [],
+    },
+  },
+  {
+    name: 'resolve_ens' as const,
+    description:
+      'Resolve an ENS name (e.g. vitalik.eth, alice.whisper.eth) to an Ethereum address and read on-chain text records. ' +
+      'Use this when a user provides an .eth name. Returns the resolved address plus metadata like ai.model, ai.capabilities, unlink.address.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        name: {
+          type: 'string' as const,
+          description: 'ENS name to resolve (e.g. "vitalik.eth", "alice.whisper.eth")',
+        },
+      },
+      required: ['name'],
     },
   },
 ] as const
@@ -1496,13 +1512,32 @@ export async function executeTool(
       // ── lookup_contact ────────────────────────
       case 'lookup_contact': {
         const { name: contactName } = input as { name: string }
+
+        // Try local address book first
         const address = getAddress(contactName)
         if (address) {
-          return JSON.stringify({ success: true, name: contactName, address })
+          return JSON.stringify({ success: true, name: contactName, address, source: 'address_book' })
         }
+
+        // If it looks like an ENS name, try ENS resolution
+        if (contactName.endsWith('.eth')) {
+          const ensResult = await resolveENS(contactName)
+          if (ensResult.address) {
+            // Cache for future lookups
+            await saveAddress(contactName, ensResult.address)
+            return JSON.stringify({
+              success: true,
+              name: contactName,
+              address: ensResult.address,
+              source: 'ens',
+              textRecords: ensResult.textRecords,
+            })
+          }
+        }
+
         return JSON.stringify({
           success: false,
-          error: `No address found for "${contactName}". Ask the user for their address.`,
+          error: `No address found for "${contactName}". Try an ENS name (e.g. alice.eth) or ask the user for their address.`,
         })
       }
 
@@ -1517,6 +1552,36 @@ export async function executeTool(
           message: count > 0
             ? `${count} contacts saved`
             : 'No contacts saved yet. Tell me someone\'s name and address to save them.',
+        })
+      }
+
+      // ── resolve_ens ─────────────────────────
+      case 'resolve_ens': {
+        const ensName = input.name as string
+        const result = await resolveENS(ensName)
+
+        if (!result.address) {
+          return JSON.stringify({
+            success: false,
+            error: `Could not resolve ENS name "${ensName}". It may not be registered or the name may be invalid.`,
+          })
+        }
+
+        // Cache the resolved address in the local address book
+        const shortName = ensName.split('.')[0] // "alice.eth" → "alice"
+        await saveAddress(ensName, result.address)
+
+        return JSON.stringify({
+          success: true,
+          name: ensName,
+          address: result.address,
+          textRecords: result.textRecords || {},
+          cached: true,
+          message: `Resolved ${ensName} → ${result.address}${
+            Object.keys(result.textRecords || {}).length > 0
+              ? `. Metadata: ${JSON.stringify(result.textRecords)}`
+              : ''
+          }`,
         })
       }
 

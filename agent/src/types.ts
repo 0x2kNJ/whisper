@@ -83,3 +83,4 @@ export type ToolName =
   | 'save_contact'
   | 'lookup_contact'
   | 'list_contacts'
+  | 'resolve_ens'
