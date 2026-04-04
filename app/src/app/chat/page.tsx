@@ -35,10 +35,10 @@ function ThinkingIndicator() {
 }
 
 const SUGGESTED_PROMPTS = [
-  'Pay my team privately \u{1F512}: Alice 0.2 USDC, Bob 0.15 USDC, Charlie 0.1 USDC',
+  'Pay alice.whisper.eth, bob.whisper.eth, charlie.whisper.eth \u{1F512} 0.001 USDC each privately',
   'Set up a private weekly payroll strategy \u{1F512} for the engineering team',
-  'Create a private escrow \u{1F512} for Dave: 0.5 USDC, release when ETH > $4k',
-  'Private swap \u{1F512} 0.1 USDC \u2192 ETH for Bob + send Alice 0.05 USDC privately',
+  'Create a private escrow \u{1F512} for alice.whisper.eth: 0.01 USDC, release when ETH > $4k',
+  'Verify income for alice.whisper.eth \u{1F512} — check ZK payment proof',
 ]
 
 export default function ChatPage() {
