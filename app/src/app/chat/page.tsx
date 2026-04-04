@@ -100,10 +100,10 @@ function ThinkingIndicator() {
 // ---------------------------------------------------------------------------
 
 const SUGGESTED_PROMPTS = [
-  'Pay my team privately 🔒: Alice 2k USDC, Bob 1.5k USDC, Charlie 1k USDC',
+  'Pay my team privately 🔒: Alice 0.2 USDC, Bob 0.15 USDC, Charlie 0.1 USDC',
   'Set up a private weekly payroll strategy 🔒 for the engineering team',
-  'Create a private escrow 🔒 for Dave: 5k USDC, release when ETH > $4k',
-  'Private swap 🔒 200 USDC → ETH for Bob + send Alice 500 USDC privately',
+  'Create a private escrow 🔒 for Dave: 0.5 USDC, release when ETH > $4k',
+  'Private swap 🔒 0.1 USDC → ETH for Bob + send Alice 0.05 USDC privately',
 ]
 
 // ---------------------------------------------------------------------------

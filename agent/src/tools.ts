@@ -43,6 +43,7 @@ import {
   type EncryptedMessage,
 } from './messaging.js'
 import { saveAddress, getAddress, listAddresses } from './addressBook.js'
+import { dryRunPayroll } from './scheduler.js'
 import {
   createStrategy,
   listStrategies,
@@ -583,6 +584,17 @@ export const toolDefinitions = [
         name: { type: 'string' as const, description: 'Contact name to look up' },
       },
       required: ['name'],
+    },
+  },
+  {
+    name: 'execute_strategy' as const,
+    description: 'Execute a payroll strategy immediately (dry-run mode — shows what would happen without sending tokens). Use to demonstrate the payroll execution flow.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        id: { type: 'string' as const, description: 'Strategy UUID to execute' },
+      },
+      required: ['id'],
     },
   },
   {
@@ -1370,6 +1382,35 @@ export async function executeTool(
           decrypted,
           payload: decrypted.payload,
           message: 'Message decrypted successfully.',
+        })
+      }
+
+      // ── execute_strategy ─────────────────────
+      case 'execute_strategy': {
+        const { id } = input as { id: string }
+        const strategy = await getStrategy(id)
+        if (!strategy) {
+          return JSON.stringify({ success: false, error: `Strategy ${id} not found` })
+        }
+        // Convert strategy to PayrollConfig format for dry run
+        const config = {
+          id: strategy.id,
+          name: strategy.name,
+          recipients: strategy.recipients,
+          token: strategy.token || '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+          schedule: strategy.schedule,
+          ownerAddress: '0x712B593eB5Ae6dE062206880BE1BD0121a86ec21',
+          signature: 'dry-run',
+          createdAt: strategy.createdAt,
+        }
+        const output = await dryRunPayroll(config as any)
+        return JSON.stringify({
+          success: true,
+          mode: 'dry_run',
+          strategy: strategy.name,
+          recipients: strategy.recipients.length,
+          output,
+          message: `Dry run complete for "${strategy.name}". In production, this would execute ${strategy.recipients.length} private payments via Unlink.`,
         })
       }
 

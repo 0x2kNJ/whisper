@@ -78,6 +78,7 @@ export type ToolName =
   | 'private_cross_chain_transfer'
   | 'encrypt_payroll_message'
   | 'decrypt_payroll_message'
+  | 'execute_strategy'
   | 'save_contact'
   | 'lookup_contact'
   | 'list_contacts'

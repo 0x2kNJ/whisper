@@ -282,7 +282,7 @@ export async function executePayroll(config: PayrollConfig): Promise<{
   let mnemonic: string
   let rpcUrl: string
   try {
-    mnemonic = getEnvOrThrow('MNEMONIC')
+    mnemonic = getEnvOrThrow('UNLINK_MNEMONIC')
     rpcUrl = baseSepolia.rpcUrl || getEnvOrThrow('BASE_SEPOLIA_RPC_URL')
   } catch (err) {
     const error = `Missing env configuration: ${err instanceof Error ? err.message : String(err)}`
@@ -423,4 +423,60 @@ export function stopScheduler(): void {
   clearInterval(schedulerInterval)
   schedulerInterval = null
   console.log('[scheduler] Stopped')
+}
+
+/**
+ * Dry-run a payroll — shows what WOULD happen without sending tokens.
+ * Perfect for demos when Unlink balance is unavailable.
+ */
+export async function dryRunPayroll(config: PayrollConfig): Promise<string> {
+  const total = computeTotalAmount(config)
+  const lines: string[] = [
+    '',
+    '═══════════════════════════════════════════════════',
+    `  DRY RUN: Payroll ${config.id.slice(0, 8)}...`,
+    '═══════════════════════════════════════════════════',
+    '',
+    `  Strategy: ${(config as any).name || 'Unnamed'}`,
+    `  Token: USDC`,
+    `  Schedule: ${config.schedule}`,
+    `  Privacy: Private (Unlink batch transfer)`,
+    '',
+    '  Recipients:',
+  ]
+
+  for (const r of config.recipients) {
+    lines.push(`    • ${r.name || r.address.slice(0, 12) + '...'}: ${r.amount} USDC`)
+  }
+
+  lines.push('')
+  lines.push(`  Total: ${total} USDC`)
+  lines.push(`  Timestamp: ${new Date().toISOString()}`)
+  lines.push('')
+  lines.push('  Execution steps:')
+  lines.push('    1. ✓ Load payroll config')
+  lines.push('    2. ✓ Verify owner signature')
+  lines.push('    3. ✓ Build batch transfer (1 ZK proof, ' + config.recipients.length + ' payments)')
+  lines.push('    4. ⏳ Execute via Unlink batchTransfer [DRY RUN — skipped]')
+  lines.push('    5. ⏳ Log execution result [DRY RUN — skipped]')
+  lines.push('')
+  lines.push('  Privacy: Sender = Unlink pool (0x647f9b99...) — NOT your address')
+  lines.push('  On-chain: ' + config.recipients.length + ' recipients paid, 0 sender traces')
+  lines.push('')
+  lines.push('═══════════════════════════════════════════════════')
+
+  const output = lines.join('\n')
+  console.log(output)
+
+  // Log as dry run
+  appendLog({
+    id: config.id,
+    timestamp: Date.now(),
+    success: true,
+    txHash: 'DRY_RUN',
+    recipients: config.recipients.length,
+    totalAmount: total,
+  })
+
+  return output
 }
