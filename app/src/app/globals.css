@@ -120,3 +120,62 @@ body {
   margin-top: 1rem;
   color: #fff;
 }
+
+/* ---------------------------------------------------------------------------
+   Glassmorphism utilities
+   --------------------------------------------------------------------------- */
+
+.glass-sidebar {
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 60px rgba(200, 216, 255, 0.03);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(200, 216, 255, 0.12);
+}
+
+.balance-glow {
+  text-shadow: 0 0 20px rgba(200, 216, 255, 0.15);
+}
+
+.history-item {
+  transition: all 0.2s ease;
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.history-item-active {
+  background: rgba(200, 216, 255, 0.06);
+  border-left: 2px solid rgba(200, 216, 255, 0.3);
+}
+
+.zk-badge {
+  background: rgba(200, 216, 255, 0.08);
+  border: 1px solid rgba(200, 216, 255, 0.15);
+  box-shadow: 0 0 20px rgba(200, 216, 255, 0.05);
+}
+
+/* Mobile drawer slide-in */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.2s ease-out;
+}
