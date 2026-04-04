@@ -24,7 +24,9 @@ interface VerificationResult {
 
 export default function VerifyPage() {
   const params = useParams()
-  const ensName = decodeURIComponent(params.name as string)
+  // Catch-all route: params.name is an array like ["alice.whisper.eth"] or ["alice","whisper","eth"]
+  const nameSegments = params.name as string[]
+  const ensName = decodeURIComponent(nameSegments.join('.'))
   const [result, setResult] = useState<VerificationResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
