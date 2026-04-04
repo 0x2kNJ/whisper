@@ -1,0 +1,20 @@
+{
+  "id": "27355997-a201-4932-907a-37abe85e3988",
+  "recipients": [
+    {
+      "name": "alice",
+      "address": "alice",
+      "amount": "0.01"
+    },
+    {
+      "name": "bob",
+      "address": "bob",
+      "amount": "0.01"
+    }
+  ],
+  "token": "USDC",
+  "schedule": "monthly",
+  "ownerAddress": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+  "signature": "",
+  "createdAt": 1775336926598
+}
