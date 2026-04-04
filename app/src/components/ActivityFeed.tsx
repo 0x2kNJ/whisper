@@ -115,7 +115,7 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
                   href={
                     item.txHash?.startsWith('0x')
                       ? item.type === 'escrow'
-                        ? `https://testnet.arcscan.io/tx/${item.txHash}`
+                        ? `https://testnet.arcscan.app/tx/${item.txHash}`
                         : `https://sepolia.basescan.org/tx/${item.txHash}`
                       : 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482'
                   }

@@ -68,7 +68,12 @@ function extractTxHash(result?: string): string | null {
 /** Map tool names to the right block explorer. */
 function explorerUrl(toolName: string, txHash: string): string {
   if (toolName === 'create_escrow' || toolName === 'check_escrow') {
-    return `https://testnet.arcscan.io/tx/${txHash}`
+    return `https://testnet.arcscan.app/tx/${txHash}`
+  }
+  // Unlink operations return UUID-format IDs, not on-chain hashes.
+  // Link to the Unlink pool contract instead.
+  if (!txHash.startsWith('0x')) {
+    return 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482'
   }
   return `https://sepolia.basescan.org/tx/${txHash}`
 }
