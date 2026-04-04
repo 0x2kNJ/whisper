@@ -32,7 +32,7 @@ export async function GET() {
     const configMod = await tryImport(agentConfigPath)
     const unlinkMod = await tryImport(unlinkPath)
 
-    const { baseSepolia, getEnvOrThrow } = configMod
+    const { baseSepolia, arcTestnet, getEnvOrThrow } = configMod
     const { createUnlinkClientWrapper, getBalances } = unlinkMod
 
     const mnemonic = getEnvOrThrow('UNLINK_MNEMONIC')
@@ -43,22 +43,33 @@ export async function GET() {
 
     const rawBalances = await getBalances(client)
 
+    // Build a combined token lookup from both chains
+    const allTokens = [
+      ...Object.values(baseSepolia.tokens as Record<string, { address: string; symbol: string }>).map(
+        (t) => ({ ...t, chain: 'Base Sepolia', explorer: `https://sepolia.basescan.org/token/${t.address}` }),
+      ),
+      ...Object.values(arcTestnet.tokens as Record<string, { address: string; symbol: string }>).map(
+        (t) => ({ ...t, chain: 'Arc Testnet', explorer: null as string | null }),
+      ),
+    ]
+
     const balances = rawBalances.map(
       (b: { token: string; symbol: string; balance: string }) => {
-        const baseToken = Object.values(baseSepolia.tokens as Record<string, { address: string }>).find(
+        const matched = allTokens.find(
           (t) => t.address.toLowerCase() === b.token.toLowerCase(),
         )
-        const chain = baseToken ? 'Base Sepolia' : 'Arc Testnet'
-        const explorer = baseToken
-          ? `https://sepolia.basescan.org/token/${b.token}`
-          : null
+
+        // Unlink pool tokens have internal addresses that don't match config.
+        // If unmatched, default to "USDC" on "Base Sepolia" (the primary pool token).
+        const symbol = matched?.symbol ?? (b.symbol !== 'UNKNOWN' ? b.symbol : 'USDC')
+        const chain = matched?.chain ?? 'Base Sepolia'
 
         return {
-          symbol: b.symbol,
+          symbol,
           balance: b.balance,
           chain,
           tokenAddress: b.token,
-          explorerUrl: explorer,
+          explorerUrl: matched?.explorer ?? null,
         }
       },
     )
