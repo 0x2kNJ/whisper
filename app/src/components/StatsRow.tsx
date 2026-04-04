@@ -49,7 +49,7 @@ export default function StatsRow({ stats, loading }: StatsRowProps) {
       label: 'Privacy Score',
       value: stats?.privacyScore?.toString() ?? '100',
       unit: '%',
-      detail: (stats?.privacyScore ?? 100) >= 90 ? 'All transfers shielded' : 'Some public transfers',
+      detail: (stats?.privacyScore ?? 100) >= 90 ? 'All transactions shielded' : 'Some public transactions',
       detailColor: (stats?.privacyScore ?? 100) >= 90 ? 'text-emerald-400' : 'text-zinc-500',
     },
   ]
@@ -59,7 +59,7 @@ export default function StatsRow({ stats, loading }: StatsRowProps) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="bg-surface-2 border border-border rounded-xl p-4"
+          className="bg-[rgba(255,255,255,0.03)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-xl p-4 hover:border-[rgba(200,216,255,0.15)] transition-colors duration-200"
         >
           <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">
             {card.label}
