@@ -233,7 +233,6 @@ export default function ChatSidebar({
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-700 border-t-[#c8d8ff]" />
           </div>
         )}
-        </div>
       </div>
     </div>
   )
