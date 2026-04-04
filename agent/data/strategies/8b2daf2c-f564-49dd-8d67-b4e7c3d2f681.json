@@ -1,0 +1,35 @@
+{
+  "id": "8b2daf2c-f564-49dd-8d67-b4e7c3d2f681",
+  "name": "Engineering Team Weekly",
+  "type": "standard",
+  "status": "active",
+  "recipients": [
+    {
+      "name": "Alice",
+      "address": "0x1111111111111111111111111111111111111111",
+      "amount": "0.01"
+    },
+    {
+      "name": "Bob",
+      "address": "0x2222222222222222222222222222222222222222",
+      "amount": "0.01"
+    },
+    {
+      "name": "Charlie",
+      "address": "0x3333333333333333333333333333333333333333",
+      "amount": "0.01"
+    },
+    {
+      "name": "Dave",
+      "address": "0x4444444444444444444444444444444444444444",
+      "amount": "0.01"
+    }
+  ],
+  "token": "USDC",
+  "schedule": "weekly",
+  "privacyLevel": "private",
+  "totalBudget": "2.08",
+  "spent": "0",
+  "executions": [],
+  "createdAt": 1775261478707
+}

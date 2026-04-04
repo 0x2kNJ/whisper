@@ -1,0 +1,30 @@
+{
+  "id": "306be4bf-2e4f-42fa-8c34-9b419f10bdc6",
+  "name": "Engineering Team Weekly Payroll",
+  "type": "standard",
+  "status": "active",
+  "recipients": [
+    {
+      "name": "Alice",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.003"
+    },
+    {
+      "name": "Bob",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.003"
+    },
+    {
+      "name": "Charlie",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.002"
+    }
+  ],
+  "token": "USDC",
+  "schedule": "weekly",
+  "privacyLevel": "private",
+  "totalBudget": "1.00",
+  "spent": "0",
+  "executions": [],
+  "createdAt": 1775312509649
+}

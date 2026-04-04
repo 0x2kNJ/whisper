@@ -1,0 +1,30 @@
+{
+  "id": "62d51d36-2aad-4d0f-9d96-a679430c9854",
+  "name": "Contractor Monthly",
+  "type": "contractor",
+  "status": "active",
+  "recipients": [
+    {
+      "name": "Alice",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.005"
+    },
+    {
+      "name": "Bob",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.005"
+    },
+    {
+      "name": "Charlie",
+      "address": "unlink1qqypm55w0q2vd6grgyq5g87vhgm72r8letde9ef5e9swcj88uaqzp4yuyepmju7te4ht36w7tvce69e5yeuwlh0ugqjf585cey3uvhtunss7s8",
+      "amount": "0.004"
+    }
+  ],
+  "token": "USDC",
+  "schedule": "monthly",
+  "privacyLevel": "private",
+  "totalBudget": "0.50",
+  "spent": "0",
+  "executions": [],
+  "createdAt": 1775312285550
+}

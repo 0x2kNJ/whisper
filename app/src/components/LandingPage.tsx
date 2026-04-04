@@ -191,7 +191,7 @@ export default function LandingPage() {
     navRight.style.cssText = 'display:flex;align-items:center;gap:1rem;'
 
     const navCta = document.createElement('a')
-    navCta.href = '/chat'
+    navCta.href = '/dashboard'
     navCta.style.cssText = `
       display:inline-flex;align-items:center;gap:0.5rem;
       padding:0.5rem 1.25rem;

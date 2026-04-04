@@ -213,7 +213,7 @@ export function createScrollSections(): HTMLElement {
   ctaSub.textContent = 'Step into the treasury agent. Speak plainly, move privately.'
 
   const ctaBtn = document.createElement('a')
-  ctaBtn.href = '/chat'
+  ctaBtn.href = '/dashboard'
   ctaBtn.className = 'section-body'
   ctaBtn.style.cssText = `
     display:inline-flex;align-items:center;gap:0.75rem;
