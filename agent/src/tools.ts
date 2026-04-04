@@ -1330,9 +1330,9 @@ export async function executeTool(
           recipientAddr = client.evmAddress
         }
 
-        // CCTP constants
-        const CCTP_TOKEN_MESSENGER = '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'
-        const ARC_DOMAIN = 12
+        // CCTP constants (Base Sepolia → Arc Testnet)
+        const CCTP_TOKEN_MESSENGER = '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA' // TokenMessengerV2
+        const ARC_DOMAIN = 26 // Arc Testnet CCTP domain
         const usdcAddress = baseSepolia.tokens.USDC.address
         const rawAmount = parseUnits(amount, 6).toString()
 
