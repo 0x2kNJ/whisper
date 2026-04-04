@@ -21,7 +21,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 
-import { baseSepolia, arcTestnet, getEnvOrThrow } from './config.js'
+import { baseSepolia, arcTestnet, getEnvOrThrow, CCTP_TOKEN_MESSENGER_V2, CCTP_ARC_DOMAIN, UNLINK_ADAPTER } from './config.js'
 import {
   createUnlinkClientWrapper,
   getBalances,
@@ -545,9 +545,9 @@ export const toolDefinitions = [
   {
     name: 'private_cross_chain_transfer' as const,
     description:
-      'Transfer USDC privately from Base Sepolia to Arc Testnet via Unlink execute() + CCTP. ' +
+      'Transfer USDC privately from Base Sepolia to Arc Testnet via Unlink execute() + CCTP V2. ' +
       'The sender is hidden (appears as Unlink pool on-chain). Recipient and amount are visible on Arc side. ' +
-      'NOTE: This is an architectural preview — CCTP cross-chain execution requires Unlink execute() support for CCTP calls.',
+      'Uses TokenMessengerV2 depositForBurn to burn USDC on Base Sepolia and mint on Arc Testnet (domain 26).',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -1390,26 +1390,100 @@ export async function executeTool(
       // ── private_cross_chain_transfer ────────
       case 'private_cross_chain_transfer': {
         const { amount, recipient } = input as { amount: string; recipient: string }
-        // Architectural preview — describes what would happen
-        return JSON.stringify({
-          success: true,
-          preview: true,
-          message: `Cross-chain private transfer: ${amount} USDC from Base Sepolia → Arc Testnet`,
-          flow: [
-            `1. Withdraw ${amount} USDC from Unlink private balance`,
-            `2. Approve USDC to CCTP TokenMessenger (0x8FE6B999...)`,
-            `3. Call depositForBurn(${amount}, ARC_DOMAIN, ${recipient}, USDC)`,
-            `4. CCTP burns USDC on Base Sepolia`,
-            `5. CCTP mints ${amount} USDC on Arc Testnet to ${recipient}`,
-          ],
-          privacy: {
-            senderHidden: true,
-            recipientVisible: true,
-            amountVisible: true,
-            note: 'On-chain sender appears as Unlink pool (0x647f9b99...), not your address',
-          },
-          status: 'ARCHITECTURAL_PREVIEW — execute() + CCTP integration pending',
+
+        const usdcAddress = baseSepolia.tokens.USDC.address
+        const rawAmount = parseUnits(amount, 6)
+
+        // mintRecipient must be bytes32 — left-pad the 20-byte address to 32 bytes
+        const mintRecipient = ('0x' + '00'.repeat(12) + recipient.slice(2).toLowerCase()) as `0x${string}`
+
+        // Withdraw slightly more than burn amount so the adapter has leftover for output re-deposit.
+        const burnAmountFloat = parseFloat(amount)
+        const withdrawAmount = (burnAmountFloat + 0.01).toFixed(6)
+
+        // calls[0]: approve TokenMessengerV2 to spend USDC from the adapter
+        // calls[1]: depositForBurn via CCTP V2
+        // Both run in the same execute — the adapter executes them sequentially.
+        const approveCalldata = encodeFunctionData({
+          abi: [{
+            name: 'approve', type: 'function' as const,
+            inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
+            outputs: [{ type: 'bool' }],
+            stateMutability: 'nonpayable' as const,
+          }],
+          functionName: 'approve',
+          args: [CCTP_TOKEN_MESSENGER_V2 as `0x${string}`, rawAmount],
         })
+
+        const cctpCalldata = encodeFunctionData({
+          abi: [{
+            name: 'depositForBurn', type: 'function' as const,
+            inputs: [
+              { name: 'amount', type: 'uint256' },
+              { name: 'destinationDomain', type: 'uint32' },
+              { name: 'mintRecipient', type: 'bytes32' },
+              { name: 'burnToken', type: 'address' },
+              { name: 'destinationCaller', type: 'bytes32' },
+              { name: 'maxFee', type: 'uint256' },
+              { name: 'minFinalityThreshold', type: 'uint32' },
+            ],
+            outputs: [{ name: 'nonce', type: 'uint64' }],
+            stateMutability: 'nonpayable' as const,
+          }],
+          functionName: 'depositForBurn',
+          args: [
+            rawAmount,
+            CCTP_ARC_DOMAIN,
+            mintRecipient,
+            usdcAddress as `0x${string}`,
+            ('0x' + '00'.repeat(32)) as `0x${string}`, // destinationCaller: permissionless
+            BigInt(0), // maxFee: 0 for testnet
+            0, // minFinalityThreshold: default
+          ],
+        })
+
+        try {
+          const result = await execute(getUnlinkClient(), {
+            withdrawals: [{ token: usdcAddress, amount: withdrawAmount }],
+            calls: [
+              { to: usdcAddress, data: approveCalldata },
+              { to: CCTP_TOKEN_MESSENGER_V2, data: cctpCalldata },
+            ],
+            outputs: [{ token: usdcAddress, minAmount: '0' }],
+            deadline: Math.floor(Date.now() / 1000) + 3600,
+          })
+
+          return JSON.stringify({
+            success: true,
+            txHash: result.txHash,
+            message: `Private cross-chain transfer: ${amount} USDC → Arc Testnet`,
+            flow: [
+              `Withdrew ${withdrawAmount} USDC from private balance (${amount} burned + 0.01 buffer returned)`,
+              `Approved USDC to CCTP TokenMessengerV2`,
+              `Called depositForBurn → domain ${CCTP_ARC_DOMAIN} (Arc Testnet)`,
+              `${amount} USDC burned on Base Sepolia via CCTP V2`,
+              `USDC will mint on Arc Testnet to ${recipient}`,
+            ],
+            privacy: {
+              senderHidden: true,
+              recipientVisible: true,
+              amountVisible: true,
+              note: 'On-chain sender = Unlink adapter, not your address',
+            },
+          })
+        } catch (err: any) {
+          return JSON.stringify({
+            success: false,
+            error: err.message,
+            debug: {
+              contract: CCTP_TOKEN_MESSENGER_V2,
+              domain: CCTP_ARC_DOMAIN,
+              amount: rawAmount.toString(),
+              recipient,
+              mintRecipient,
+            },
+          })
+        }
       }
 
       // ── encrypt_payroll_message ──────────────

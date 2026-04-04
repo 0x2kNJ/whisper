@@ -1,7 +1,7 @@
 # ADR-004: Cross-Chain Private Payroll via Unlink + CCTP
 
 ## Status
-Proposed (architectural — not yet implemented)
+Implemented — CCTP V2 (TokenMessengerV2, domain 26)
 
 ## Context
 Whisper needs to execute payroll across chains (Base Sepolia → Arc Testnet). CCTP V2 enables native USDC transfers between chains. However, a standard CCTP transfer exposes the sender address on-chain.
@@ -42,29 +42,32 @@ Recipient uses USDC on Arc (WhisperEscrow, direct spend, etc.)
 
 ### Implementation (agent tool)
 ```typescript
-// private_cross_chain_transfer tool
-async function privateCrossChainTransfer(params: {
-  token: string       // USDC
-  amount: string
-  recipient: string   // address on destination chain
-  destChain: 'arc'    // destination chain
-}) {
-  const cctpCall = encodeFunctionData({
-    abi: TokenMessengerABI,
-    functionName: 'depositForBurn',
-    args: [amount, ARC_DOMAIN, recipient, USDC]
-  })
+// private_cross_chain_transfer tool — CCTP V2 (TokenMessengerV2)
+// depositForBurn has 7 params in V2: amount, destinationDomain, mintRecipient,
+// burnToken, destinationCaller, maxFee, minFinalityThreshold
+const cctpCall = encodeFunctionData({
+  abi: TokenMessengerV2ABI,
+  functionName: 'depositForBurn',
+  args: [
+    amount,
+    26,                  // Arc Testnet domain
+    mintRecipient,       // bytes32-padded recipient
+    USDC,
+    bytes32(0),          // destinationCaller: permissionless
+    0,                   // maxFee: 0 for testnet
+    0,                   // minFinalityThreshold: default
+  ]
+})
 
-  return unlink.execute({
-    withdrawals: [{ token: USDC, amount }],
-    calls: [
-      approve(USDC, TOKEN_MESSENGER, amount),
-      { to: TOKEN_MESSENGER, data: cctpCall }
-    ],
-    outputs: [],
-    deadline: now + 3600
-  })
-}
+return unlink.execute({
+  withdrawals: [{ token: USDC, amount }],
+  calls: [
+    approve(USDC, CCTP_TOKEN_MESSENGER_V2, amount),
+    { to: CCTP_TOKEN_MESSENGER_V2, data: cctpCall }
+  ],
+  outputs: [],
+  deadline: now + 3600
+})
 ```
 
 ## Alternatives Considered

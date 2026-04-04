@@ -123,7 +123,7 @@ function toRawAmount(amount: string, tokenAddress: string): string {
 async function pollUntilRelayed(
   sdk: SDKUnlinkClient,
   txId: string,
-  timeoutMs = 120_000,
+  timeoutMs = 180_000,
 ): Promise<string> {
   const TERMINAL = new Set(['relayed', 'processed', 'failed'])
   const start = Date.now()
@@ -134,7 +134,9 @@ async function pollUntilRelayed(
     })
     if (TERMINAL.has(result.status)) {
       if (result.status === 'failed') {
-        throw new Error(`Unlink transaction ${txId} failed on-chain`)
+        const err = new Error(`Unlink transaction ${txId} failed on-chain`)
+        ;(err as any).txResult = result
+        throw err
       }
       return txId
     }

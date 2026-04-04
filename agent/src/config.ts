@@ -47,6 +47,13 @@ export const ethereumSepolia = {
 
 export const UNLINK_POOL = '0x647f9b99af97e4b79DD9Dd6de3b583236352f482'
 
+// CCTP V2 — Cross-Chain Transfer Protocol
+export const CCTP_TOKEN_MESSENGER_V2 = '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA' // Base Sepolia TokenMessengerV2
+export const CCTP_ARC_DOMAIN = 26 // Arc Testnet destination domain (Circle-issued)
+
+// Unlink adapter — executes calls on behalf of the pool. Discovered on-chain from execute() tx traces.
+export const UNLINK_ADAPTER = '0x41BF8f07BC4644055db5BA95c422AAC1Be810Be3'
+
 export function getEnvOrThrow(key: string): string {
   const val = process.env[key]
   if (!val) throw new Error(`Missing env var: ${key}`)
