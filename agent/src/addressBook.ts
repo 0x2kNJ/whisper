@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPublicClient, http } from 'viem'
 import { normalize } from 'viem/ens'
-import { mainnet } from 'viem/chains'
+import { sepolia } from 'viem/chains'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = join(__dirname, '..', 'data')
@@ -66,11 +66,13 @@ export async function resolveENS(name: string): Promise<{
   unlinkAddress: string | null
   preferredAddress: string | null
   textRecords?: Record<string, string>
+  network?: string
 }> {
   try {
-    const rpcUrl = process.env.ETH_RPC_URL || 'https://eth.drpc.org'
+    // All ENS resolution on Sepolia (where whisper.eth is registered)
+    const rpcUrl = process.env.ETH_SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/FMZ3q69r-qEw-ScYg8pz3'
     const client = createPublicClient({
-      chain: mainnet,
+      chain: sepolia,
       transport: http(rpcUrl),
     })
 
