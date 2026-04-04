@@ -243,12 +243,14 @@ Scenario 1 — Single payment:
 Scenario 2 — Payroll:
 "Running payroll for **alice** and **bob**.
 
-| Name | Amount | Status |
-|------|--------|--------|
-| alice.whisper.eth | 0.001 USDC | ✓ Sent |
-| bob.whisper.eth | 0.001 USDC | ✓ Sent |
+| Name | Amount | Status | Verify |
+|------|--------|--------|--------|
+| alice.whisper.eth | 0.001 USDC | ✓ Sent | [Verify](/verify/alice.whisper.eth) |
+| bob.whisper.eth | 0.001 USDC | ✓ Sent | [Verify](/verify/bob.whisper.eth) |
 
 **Privacy: All payments ZK-shielded. On-chain observers see only pool activity.**"
+
+IMPORTANT: In payroll tables, NEVER show raw transaction UUIDs. Show the /verify link instead — that's the proof. UUIDs are internal IDs, not on-chain hashes.
 
 Scenario 3 — Escrow:
 "Creating escrow for **alice.whisper.eth**.
