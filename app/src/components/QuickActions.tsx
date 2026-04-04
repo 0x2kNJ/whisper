@@ -5,11 +5,11 @@ interface QuickActionsProps {
 }
 
 const actions = [
-  { label: 'Transfer', icon: '→', prompt: 'Transfer USDC to ' },
-  { label: 'Run Payroll', icon: '◷', prompt: 'Run payroll for ' },
-  { label: 'Create Escrow', icon: '⊡', prompt: 'Create escrow for ' },
-  { label: 'Verify Income', icon: '◈', prompt: 'Verify income for ' },
-  { label: 'Swap', icon: '⇄', prompt: 'Swap ' },
+  { label: 'Transfer', icon: '→', prompt: 'Pay alice.whisper.eth 0.001 USDC privately' },
+  { label: 'Run Payroll', icon: '◷', prompt: 'Run payroll: alice and bob — 0.001 USDC each' },
+  { label: 'Create Escrow', icon: '⊡', prompt: 'Create escrow for alice.whisper.eth: 0.01 USDC, release when ETH > $4k' },
+  { label: 'Verify Income', icon: '◈', prompt: 'Verify income for alice.whisper.eth' },
+  { label: 'Swap', icon: '⇄', prompt: 'Swap 0.001 USDC to WETH' },
 ]
 
 export default function QuickActions({ onAction }: QuickActionsProps) {

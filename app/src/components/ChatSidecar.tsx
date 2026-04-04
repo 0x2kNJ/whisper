@@ -50,6 +50,8 @@ export default function ChatSidecar({
   const [isThinking, setIsThinking] = useState(false)
   const [agentHistory, setAgentHistory] = useState<AgentHistoryMessage[]>([])
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
+  const [conversations, setConversations] = useState<Array<{ id: string; title: string; updated_at: number }>>([])
+  const [showHistory, setShowHistory] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -75,6 +77,49 @@ export default function ChatSidecar({
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [initialPrompt, isOpen])
+
+  // Fetch conversations when opened
+  const fetchConversations = useCallback(async () => {
+    try {
+      const res = await fetch(CONVERSATIONS_ENDPOINT)
+      if (res.ok) {
+        const data = await res.json()
+        setConversations(data.conversations ?? [])
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    if (isOpen) fetchConversations()
+  }, [isOpen, fetchConversations])
+
+  // Load a conversation from history
+  const loadConversation = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`${CONVERSATIONS_ENDPOINT}/${id}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const loadedMessages: ChatMessageData[] = data.messages.map(
+        (m: { id: string; role: string; text: string; tool_calls: unknown[] }) => ({
+          id: m.id,
+          role: m.role as 'user' | 'assistant',
+          text: m.text,
+          toolCalls: m.tool_calls as ToolCallInfo[],
+          streaming: false,
+        }),
+      )
+      const history: AgentHistoryMessage[] = data.messages
+        .filter((m: { role: string; text: string }) => m.text)
+        .map((m: { role: string; text: string }) => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.text,
+        }))
+      setMessages(loadedMessages)
+      setAgentHistory(history)
+      setActiveConversationId(id)
+      setShowHistory(false)
+    } catch {}
+  }, [])
 
   // Resize handling
   const handleResizeStart = useCallback(
@@ -292,6 +337,8 @@ export default function ChatSidecar({
     setAgentHistory([])
     setActiveConversationId(null)
     setInput('')
+    setShowHistory(false)
+    fetchConversations()
     inputRef.current?.focus()
   }
 
@@ -323,12 +370,22 @@ export default function ChatSidecar({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowHistory(h => !h)}
+            className={`h-7 px-2.5 rounded-md text-[11px] transition-all ${
+              showHistory
+                ? 'text-[#c8d8ff] bg-[rgba(200,216,255,0.1)]'
+                : 'text-zinc-500 hover:text-zinc-300 hover:bg-[#1a1a1a]'
+            }`}
+          >
+            History {showHistory ? '▴' : '▾'}
+          </button>
           <button
             onClick={handleNewChat}
             className="h-7 px-2.5 rounded-md text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-[#1a1a1a] transition-all"
           >
-            New Chat
+            + New
           </button>
           <button
             onClick={onClose}
@@ -338,6 +395,36 @@ export default function ChatSidecar({
           </button>
         </div>
       </div>
+
+      {/* History panel */}
+      {showHistory && (
+        <div className="border-b border-[#222] max-h-[280px] overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="px-5 py-6 text-center">
+              <p className="text-xs text-zinc-500">No past conversations</p>
+            </div>
+          ) : (
+            <div className="py-1">
+              {conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  onClick={() => loadConversation(conv.id)}
+                  className={`w-full text-left px-5 py-2.5 text-xs transition-colors hover:bg-[rgba(200,216,255,0.04)] ${
+                    activeConversationId === conv.id
+                      ? 'text-[#c8d8ff] bg-[rgba(200,216,255,0.06)]'
+                      : 'text-zinc-400'
+                  }`}
+                >
+                  <div className="truncate font-medium">{conv.title}</div>
+                  <div className="text-[10px] text-zinc-600 mt-0.5">
+                    {new Date(conv.updated_at).toLocaleDateString()} · {new Date(conv.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3 justify-end">
