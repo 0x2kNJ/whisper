@@ -12,10 +12,16 @@ export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
 
-  const init = useCallback(async () => {
+  const init = useCallback(async (signal: { aborted: boolean }) => {
     const canvas = canvasRef.current
     const container = containerRef.current
     if (!canvas || !container) return
+
+    // Force scroll to top on load (browser preserves position on refresh)
+    window.scrollTo(0, 0)
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'
+    }
 
     // Dynamic imports — keeps Three.js out of SSR bundle
     const THREE = await import('three')
@@ -24,14 +30,13 @@ export default function LandingPage() {
     const { initScrollAnimations } = await import('@/lib/ui/scrollAnimations')
     const { initSmoothScroll } = await import('@/lib/ui/scrollController')
 
-    // ── HERO IMAGE ──
+    // ── HERO IMAGE (static, no parallax) ──
     const heroImage = document.createElement('div')
     heroImage.id = 'hero-image'
     heroImage.style.cssText = `
-      position: fixed; top: -2%; left: -2%; width: 104%; height: 104%;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       z-index: 0;
       background: url('/hero.png') center 35%/cover no-repeat;
-      will-change: transform;
     `
     container.prepend(heroImage)
 
@@ -48,8 +53,10 @@ export default function LandingPage() {
     const particles = scene.createParticles(threeScene)
     const { composer, update: updatePostProcessing } = scene.createPostProcessing(renderer, threeScene, camera)
     const cameraController = new scene.CameraController(camera)
-    cameraController.setHeroImage(heroImage)
     const clock = new THREE.Clock()
+
+    // Abort if strict mode unmounted us during async init
+    if (signal.aborted) return
 
     let animFrameId: number
     function animate() {
@@ -78,15 +85,29 @@ export default function LandingPage() {
 
     const tagline = document.createElement('p')
     tagline.id = 'main-tagline'
-    tagline.textContent = 'Your treasury has a voice. Nobody else needs to hear it.'
+    tagline.textContent = ''
 
     const enterBtn = document.createElement('button')
     enterBtn.id = 'enter-btn'
     enterBtn.textContent = 'Enter'
+    enterBtn.style.opacity = '0'
+    enterBtn.style.transition = 'opacity 0.5s ease'
 
     introOverlay.appendChild(tagline)
     introOverlay.appendChild(enterBtn)
     container.appendChild(introOverlay)
+
+    // Typewriter animation — fast letter roll-in
+    const taglineText = 'Move capital with a whisper.'
+    let charIndex = 0
+    const typeInterval = setInterval(() => {
+      tagline.textContent = taglineText.slice(0, ++charIndex)
+      if (charIndex >= taglineText.length) {
+        clearInterval(typeInterval)
+        // Show enter button after typewriter completes
+        setTimeout(() => { enterBtn.style.opacity = '1' }, 300)
+      }
+    }, 40)
 
     // ── PERSISTENT HERO TEXT ──
     const heroText = document.createElement('div')
@@ -119,13 +140,14 @@ export default function LandingPage() {
     const handleScroll = () => {
       const progress = Math.min(window.scrollY / (window.innerHeight * 0.6), 1)
       heroText.style.opacity = String(1 - progress)
+      // Hide scroll indicator only at the very bottom (footer)
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      if (window.scrollY > maxScroll - 100) {
+        scrollIndicator.style.opacity = '0'
+      } else if (scrollIndicator.style.opacity === '0' && window.scrollY < maxScroll - 100) {
+        scrollIndicator.style.opacity = '1'
+      }
       canvas.style.opacity = String(1 - progress)
-
-      const imgFadeStart = window.innerHeight * 3
-      const imgFadeEnd = window.innerHeight * 6
-      const imgProgress = Math.max(0, Math.min((window.scrollY - imgFadeStart) / (imgFadeEnd - imgFadeStart), 1))
-      heroImage.style.opacity = String(1 - imgProgress)
-      heroImage.style.transform = `translateY(${window.scrollY * 0.1}px) scale(1.05)`
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
 
@@ -208,9 +230,60 @@ export default function LandingPage() {
     floatingNav.appendChild(navRight)
     container.appendChild(floatingNav)
 
+    // ── SCROLL INDICATOR ──
+    const scrollIndicator = document.createElement('div')
+    scrollIndicator.id = 'scroll-indicator'
+    const svgNS = 'http://www.w3.org/2000/svg'
+    const svg = document.createElementNS(svgNS, 'svg')
+    svg.setAttribute('width', '36')
+    svg.setAttribute('height', '36')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', 'rgba(255,255,255,0.85)')
+    svg.setAttribute('stroke-width', '2')
+    svg.setAttribute('stroke-linecap', 'round')
+    svg.setAttribute('stroke-linejoin', 'round')
+    const polyline = document.createElementNS(svgNS, 'polyline')
+    polyline.setAttribute('points', '6 9 12 15 18 9')
+    svg.appendChild(polyline)
+    scrollIndicator.appendChild(svg)
+    scrollIndicator.style.cssText = `
+      position: fixed; bottom: 1.1rem; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10; opacity: 0; cursor: pointer;
+      animation: scrollBounce 2s ease-in-out infinite;
+      transition: opacity 0.6s ease;
+    `
+    scrollIndicator.addEventListener('click', () => {
+      // Find all scroll sections and determine which one to scroll to next
+      const sections = container.querySelectorAll('.scroll-section')
+      const currentScroll = window.scrollY + window.innerHeight
+      for (const section of Array.from(sections)) {
+        const rect = (section as HTMLElement).getBoundingClientRect()
+        const sectionTop = rect.top + window.scrollY
+        if (sectionTop > currentScroll - 100) {
+          window.scrollTo({ top: sectionTop, behavior: 'smooth' })
+          return
+        }
+      }
+      // Fallback: scroll one viewport
+      window.scrollTo({ top: window.scrollY + window.innerHeight, behavior: 'smooth' })
+    })
+    container.appendChild(scrollIndicator)
+
     // ── ENTER BUTTON ──
     const handleEnter = () => {
+      // Instantly hide tagline and button
+      tagline.style.display = 'none'
+      enterBtn.style.display = 'none'
+
+      // White background fades out normally
       introOverlay.style.opacity = '0'
+
+      // Show scroll indicator after reveal
+      setTimeout(() => {
+        scrollIndicator.style.opacity = '1'
+      }, 1000)
 
       // Show floating nav after intro fades
       setTimeout(() => {
@@ -253,6 +326,7 @@ export default function LandingPage() {
 
       // Remove DOM elements we created
       heroImage.remove()
+      scrollIndicator.remove()
       introOverlay.remove()
       heroText.remove()
       scrollSections.remove()
@@ -261,8 +335,10 @@ export default function LandingPage() {
   }, [])
 
   useEffect(() => {
-    init()
+    const signal = { aborted: false }
+    init(signal)
     return () => {
+      signal.aborted = true
       cleanupRef.current?.()
     }
   }, [init])
