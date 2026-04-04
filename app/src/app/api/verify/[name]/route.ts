@@ -3,6 +3,10 @@ import { createPublicClient, http } from 'viem'
 import { sepolia } from 'viem/chains'
 import { normalize } from 'viem/ens'
 
+// Force dynamic — never cache this route
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { name: string } },
@@ -72,6 +76,8 @@ export async function GET(
       },
       isPrivate: !!unlinkAddress,
       isVerified: !!proofHash,
+    }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
     })
   } catch (err) {
     return NextResponse.json(
