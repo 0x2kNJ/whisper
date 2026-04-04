@@ -449,6 +449,7 @@ export default function ChatSidecar({
                 { icon: '◷', text: 'Run payroll: alice and bob — 0.001 USDC each', badge: '🔒' },
                 { icon: '⊡', text: 'Create escrow for alice: 0.01 USDC, release when ETH > $4k', badge: '🔒' },
                 { icon: '◈', text: 'Verify income for alice.whisper.eth', badge: '🔒' },
+                { icon: '⇄', text: 'Rebalance treasury to 80% USDC / 20% WETH', badge: '🔒' },
               ].map((p, i) => (
                 <button
                   key={i}
