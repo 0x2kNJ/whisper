@@ -50,10 +50,23 @@ export async function saveAddress(name: string, address: string): Promise<void> 
 }
 
 /**
- * Resolve an ENS name to an Ethereum address.
- * Uses Ethereum Sepolia for testnet resolution.
+ * Resolve an ENS name to an address + text records.
+ * Uses Ethereum mainnet (where ENS names are registered).
+ *
+ * Priority: If the ENS name has a `unlink.address` text record, that is returned
+ * as the preferred address for privacy-preserving transfers. The EVM address is
+ * also returned for reference.
+ *
+ * This is the key ENS + ZK integration:
+ *   alice.eth → unlink.address = "unlink1qq..." → private transfer via ZK pool
+ *   Human-readable name → private address → private transfer
  */
-export async function resolveENS(name: string): Promise<{ address: string | null; textRecords?: Record<string, string> }> {
+export async function resolveENS(name: string): Promise<{
+  address: string | null
+  unlinkAddress: string | null
+  preferredAddress: string | null
+  textRecords?: Record<string, string>
+}> {
   try {
     const rpcUrl = process.env.ETH_RPC_URL || 'https://eth.drpc.org'
     const client = createPublicClient({
@@ -61,25 +74,45 @@ export async function resolveENS(name: string): Promise<{ address: string | null
       transport: http(rpcUrl),
     })
 
-    const address = await client.getEnsAddress({
-      name: normalize(name),
-    })
+    const normalizedName = normalize(name)
 
-    // Try to read useful text records
+    const evmAddress = await client.getEnsAddress({ name: normalizedName })
+
+    // Read text records — prioritize unlink.address for privacy
     const textRecords: Record<string, string> = {}
-    const recordKeys = ['description', 'url', 'ai.model', 'ai.capabilities', 'ai.protocol', 'unlink.address']
+    const recordKeys = [
+      'unlink.address',     // Priority: ZK-shielded Unlink address
+      'description',
+      'url',
+      'ai.model',
+      'ai.capabilities',
+      'ai.protocol',
+      'com.twitter',
+      'com.github',
+    ]
     for (const key of recordKeys) {
       try {
-        const value = await client.getEnsText({ name: normalize(name), key })
+        const value = await client.getEnsText({ name: normalizedName, key })
         if (value) textRecords[key] = value
       } catch {
         // Skip failed text record reads
       }
     }
 
-    return { address: address ?? null, textRecords }
+    const unlinkAddress = textRecords['unlink.address'] || null
+
+    // Preferred address: Unlink address if available (for private transfers),
+    // otherwise fall back to EVM address
+    const preferredAddress = unlinkAddress || (evmAddress ?? null)
+
+    return {
+      address: evmAddress ?? null,
+      unlinkAddress,
+      preferredAddress,
+      textRecords,
+    }
   } catch (err) {
-    return { address: null }
+    return { address: null, unlinkAddress: null, preferredAddress: null }
   }
 }
 

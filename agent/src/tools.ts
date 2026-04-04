@@ -872,14 +872,25 @@ export async function executeTool(
         const tokenInfo = resolveToken(input.token as string)
         const client = getUnlinkClient()
 
-        // Resolve recipient: if it's a name (not an address), look up from address book
+        // Resolve recipient: ENS → address book → raw address
         let recipientAddress = input.recipient as string
-        if (!recipientAddress.startsWith('unlink1') && !recipientAddress.startsWith('0x')) {
+        if (recipientAddress.endsWith('.eth')) {
+          // ENS resolution — prioritizes unlink.address for privacy
+          const ensResult = await resolveENS(recipientAddress)
+          if (ensResult.preferredAddress) {
+            recipientAddress = ensResult.preferredAddress
+          } else {
+            return JSON.stringify({
+              success: false,
+              error: `Could not resolve ENS name "${recipientAddress}".`,
+            })
+          }
+        } else if (!recipientAddress.startsWith('unlink1') && !recipientAddress.startsWith('0x')) {
           const resolved = getAddress(recipientAddress)
           if (!resolved) {
             return JSON.stringify({
               success: false,
-              error: `Contact "${recipientAddress}" not found in address book. Use list_contacts to see available contacts.`,
+              error: `Contact "${recipientAddress}" not found. Try an ENS name (e.g. alice.eth) or use list_contacts.`,
             })
           }
           recipientAddress = resolved
@@ -1522,13 +1533,16 @@ export async function executeTool(
         // If it looks like an ENS name, try ENS resolution
         if (contactName.endsWith('.eth')) {
           const ensResult = await resolveENS(contactName)
-          if (ensResult.address) {
-            // Cache for future lookups
-            await saveAddress(contactName, ensResult.address)
+          if (ensResult.preferredAddress) {
+            // Cache preferred address (Unlink if available)
+            await saveAddress(contactName, ensResult.preferredAddress)
             return JSON.stringify({
               success: true,
               name: contactName,
-              address: ensResult.address,
+              address: ensResult.preferredAddress,
+              evmAddress: ensResult.address,
+              unlinkAddress: ensResult.unlinkAddress,
+              isPrivate: !!ensResult.unlinkAddress,
               source: 'ens',
               textRecords: ensResult.textRecords,
             })
@@ -1560,28 +1574,31 @@ export async function executeTool(
         const ensName = input.name as string
         const result = await resolveENS(ensName)
 
-        if (!result.address) {
+        if (!result.preferredAddress) {
           return JSON.stringify({
             success: false,
             error: `Could not resolve ENS name "${ensName}". It may not be registered or the name may be invalid.`,
           })
         }
 
-        // Cache the resolved address in the local address book
-        const shortName = ensName.split('.')[0] // "alice.eth" → "alice"
-        await saveAddress(ensName, result.address)
+        // Cache the preferred address (Unlink if available, otherwise EVM)
+        await saveAddress(ensName, result.preferredAddress)
+
+        const privacyNote = result.unlinkAddress
+          ? `Privacy: Using Unlink address from ENS text record — transfers will be ZK-shielded.`
+          : `Note: No Unlink address found in ENS records. Using EVM address — consider setting unlink.address text record for private transfers.`
 
         return JSON.stringify({
           success: true,
           name: ensName,
-          address: result.address,
+          evmAddress: result.address,
+          unlinkAddress: result.unlinkAddress,
+          preferredAddress: result.preferredAddress,
+          isPrivate: !!result.unlinkAddress,
           textRecords: result.textRecords || {},
           cached: true,
-          message: `Resolved ${ensName} → ${result.address}${
-            Object.keys(result.textRecords || {}).length > 0
-              ? `. Metadata: ${JSON.stringify(result.textRecords)}`
-              : ''
-          }`,
+          privacyNote,
+          message: `Resolved ${ensName} → ${result.preferredAddress}${result.unlinkAddress ? ' (Unlink ZK address)' : ' (EVM address)'}`,
         })
       }
 
