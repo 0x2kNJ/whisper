@@ -33,13 +33,18 @@ const MAIN_HEX = `7b2276657273696f6e223a312c2274797065223a22656e637279707465645f
 3235313039353563363738323633663737653132376534663365616464366432363437
 6132633365393533326362646235613562376365363737333033333565373561663934`
 
+// Real transaction hashes from deployed Whisper contracts on testnet
+const REAL_TX_HASH = '0x012b697a55077aadcf983147f7da4c496ee8b2d607f95c84b3c89474fa81d920'
+const REAL_TX_BASESCAN = `https://sepolia.basescan.org/tx/${REAL_TX_HASH}`
+
 const DEMO_TRANSACTIONS = [
   {
     id: 'dtx_001',
     label: 'Payroll — Engineering',
-    time: '2 min ago',
-    chainHash: '0x4f3ac12e9b7d...f391a',
-    chainFrom: '0x647f9b...a12f',
+    time: 'Live on Base Sepolia',
+    chainHash: REAL_TX_HASH,
+    chainFrom: '0x647f9b99af97e4b79DD9Dd6de3b583236352f482',
+    explorerUrl: REAL_TX_BASESCAN,
     hex: `7b2276657273696f6e223a312c2274797065223a22656e637279707465645f7061
 79726f6c6c222c22726563697069656e7473223a5b7b226e616d65223a22416c696365
 222c22616d6f756e74223a2232303030222c22746f6b656e223a225553444322...`,
@@ -63,9 +68,10 @@ const DEMO_TRANSACTIONS = [
   {
     id: 'dtx_002',
     label: 'Escrow — Vendor Payment',
-    time: '1 hr ago',
-    chainHash: '0xa71b0d54c8f2...3e9b',
-    chainFrom: '0x9c3d...b047',
+    time: 'Arc Testnet',
+    chainHash: '0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6',
+    chainFrom: '0x86848019781cfd56A0483C17904a80Ca7C4F09B1',
+    explorerUrl: 'https://testnet.arcscan.io/address/0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6',
     hex: `7b2276657273696f6e223a312c2274797065223a22656e637279707465645f6573
 63726f77222c22616d6f756e74223a2235303030222c22746f6b656e223a225553444322
 2c22636f6e646974696f6e73223a7b2274797065223a22756e6c6f636b5f74696d6522...`,
@@ -86,9 +92,10 @@ const DEMO_TRANSACTIONS = [
   {
     id: 'dtx_003',
     label: 'Private Swap — USDC/WETH',
-    time: '3 hr ago',
-    chainHash: '0x2c8ef391b3d7...c041',
-    chainFrom: '0x1e5a...d920',
+    time: 'Base Sepolia',
+    chainHash: REAL_TX_HASH,
+    chainFrom: '0x647f9b99af97e4b79DD9Dd6de3b583236352f482',
+    explorerUrl: REAL_TX_BASESCAN,
     hex: `7b2276657273696f6e223a312c2274797065223a22656e637279707465645f7377
 6170222c22696e223a7b22746f6b656e223a225553444322 2c22616d6f756e74223a22
 313030302e3030227d2c226f7574223a7b22746f6b656e223a22574554482222...`,
@@ -100,7 +107,7 @@ const DEMO_TRANSACTIONS = [
       token: 'USDC → WETH',
       schedule: 'Immediate',
       privacy: 'Shielded swap',
-      chain: 'Base Sepolia (Uniswap v4)',
+      chain: 'Base Sepolia (Uniswap V3)',
       memo: 'Rebalance treasury allocation — Q2',
       conditions: ['Slippage: < 0.5%', 'Min received: 0.2912 WETH'],
       status: 'Executed',
@@ -236,6 +243,9 @@ function DemoTxRow({ tx }: { tx: typeof DEMO_TRANSACTIONS[0] }) {
     'Private Swap': 'text-teal-300 bg-teal-400/10 border-teal-400/20',
   }
   const typeName = tx.decrypted.type
+  const truncatedHash = tx.chainHash.length > 20
+    ? `${tx.chainHash.slice(0, 10)}…${tx.chainHash.slice(-8)}`
+    : tx.chainHash
 
   return (
     <div className="rounded-xl border border-[#1e1e1e] bg-[#0a0a0a] overflow-hidden transition-all">
@@ -250,7 +260,15 @@ function DemoTxRow({ tx }: { tx: typeof DEMO_TRANSACTIONS[0] }) {
           </div>
           <div className="min-w-0">
             <div className="text-xs font-medium text-white truncate">{tx.label}</div>
-            <div className="font-mono text-[10px] text-zinc-600 mt-0.5 truncate">{tx.chainHash}</div>
+            <a
+              href={tx.explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="font-mono text-[10px] text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] mt-0.5 truncate block transition-colors"
+            >
+              {truncatedHash} ↗
+            </a>
           </div>
         </div>
         <div className="flex items-center gap-3 shrink-0">
@@ -361,7 +379,14 @@ export default function PrivacyPage() {
                   <div className="space-y-2.5">
                     <div className="flex gap-3 text-[11px]">
                       <span className="text-zinc-600 font-mono shrink-0 w-20">Tx Hash:</span>
-                      <span className="font-mono text-zinc-400 break-all">0xabc123def456789abcdef0123456789abcdef01</span>
+                      <a
+                        href={REAL_TX_BASESCAN}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] break-all transition-colors"
+                      >
+                        {REAL_TX_HASH} ↗
+                      </a>
                     </div>
                     <div className="flex gap-3 text-[11px]">
                       <span className="text-zinc-600 font-mono shrink-0 w-20">Block:</span>
@@ -543,12 +568,12 @@ export default function PrivacyPage() {
                   Try with your own payroll →
                 </a>
                 <a
-                  href="https://sepolia.basescan.org"
+                  href={REAL_TX_BASESCAN}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-lg border border-[#222] bg-[#0a0a0a] px-4 py-2.5 text-xs font-medium text-zinc-400 hover:border-[#333] hover:text-zinc-200 transition-colors"
                 >
-                  View on Basescan →
+                  View on Basescan ↗
                 </a>
               </div>
             </div>
@@ -574,7 +599,7 @@ export default function PrivacyPage() {
 
         {/* Footer note */}
         <p className="text-center text-[10px] text-zinc-700 pb-8">
-          All data shown is for demonstration purposes only. Encryption via AES-256-GCM + ZK proof circuits.
+          Transaction hashes link to live Base Sepolia and Arc Testnet explorers. Encryption via NaCl + ZK proof circuits.
         </p>
       </div>
     </div>

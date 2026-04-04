@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, FormEvent } from 'react'
 import ChatMessage, { type ChatMessageData } from '@/components/ChatMessage'
 import { type ToolCallInfo } from '@/components/ToolCallCard'
+import ToolProgressCard from '@/components/ToolProgressCard'
 import ChatSidebar, {
   type ConversationSummary,
   type BalanceInfo,
@@ -46,6 +47,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [input, setInput] = useState('')
   const [isThinking, setIsThinking] = useState(false)
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [agentHistory, setAgentHistory] = useState<AgentHistoryMessage[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -250,10 +252,15 @@ export default function ChatPage() {
               continue
             }
 
-            if (eventType === 'text') {
+            if (eventType === 'tool_start') {
+              const { name } = parsed as { name: string }
+              setActiveTool(name)
+              setIsThinking(false)
+            } else if (eventType === 'text') {
               const { text: t } = parsed as { text: string }
               finalResponse += t
               setIsThinking(false)
+              setActiveTool(null)
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
@@ -264,6 +271,7 @@ export default function ChatPage() {
             } else if (eventType === 'tool_call') {
               const tc = parsed as ToolCallInfo
               finalToolCalls.push(tc)
+              setActiveTool(null)
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
@@ -349,6 +357,7 @@ export default function ChatPage() {
         )
       } finally {
         setIsThinking(false)
+        setActiveTool(null)
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId ? { ...m, streaming: false } : m,
@@ -475,7 +484,9 @@ export default function ChatPage() {
                 <ChatMessage key={msg.id} message={msg} />
               ))}
 
-              {isThinking &&
+              {activeTool && <ToolProgressCard toolName={activeTool} />}
+
+              {isThinking && !activeTool &&
                 !messages.find(
                   (m) =>
                     m.role === 'assistant' &&

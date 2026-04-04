@@ -105,6 +105,10 @@ export async function POST(req: NextRequest) {
             accumulatedText += text
             send('text', { text })
           },
+          // onToolStart — fired before tool execution begins
+          (info: { name: string; input: Record<string, unknown> }) => {
+            send('tool_start', info)
+          },
         )
 
         // If no text was streamed incrementally, stream the final response now

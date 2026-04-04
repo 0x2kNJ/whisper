@@ -50,6 +50,29 @@ interface ToolCallCardProps {
   toolCall: ToolCallInfo
 }
 
+/** Try to extract a transaction hash from a tool call result. */
+function extractTxHash(result?: string): string | null {
+  if (!result) return null
+  try {
+    const parsed = JSON.parse(result)
+    if (parsed.txHash) return parsed.txHash
+    if (parsed.transactionHash) return parsed.transactionHash
+    if (parsed.hash) return parsed.hash
+  } catch {
+    // fallback: regex match a 0x-prefixed 64-char hex string
+  }
+  const match = result.match(/0x[a-fA-F0-9]{64}/)
+  return match ? match[0] : null
+}
+
+/** Map tool names to the right block explorer. */
+function explorerUrl(toolName: string, txHash: string): string {
+  if (toolName === 'create_escrow' || toolName === 'check_escrow') {
+    return `https://testnet.arcscan.io/tx/${txHash}`
+  }
+  return `https://sepolia.basescan.org/tx/${txHash}`
+}
+
 export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
   const [inputOpen, setInputOpen] = useState(false)
   const [resultOpen, setResultOpen] = useState(false)
@@ -58,6 +81,7 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
   const hasResult = toolCall.result && toolCall.result.length > 0
   const isSuccess = hasResult && toolCall.result.includes('"success":true')
   const isError = hasResult && toolCall.result.includes('"success":false')
+  const txHash = extractTxHash(toolCall.result)
 
   return (
     <div className={`animate-slide-up my-2 rounded-lg border overflow-hidden transition-colors duration-500 ${
@@ -78,6 +102,17 @@ export default function ToolCallCard({ toolCall }: ToolCallCardProps) {
           {toolLabel(toolCall.name)}
         </span>
         <div className="flex-1" />
+        {txHash && (
+          <a
+            href={explorerUrl(toolCall.name, txHash)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] transition-colors font-mono"
+            title="View on block explorer"
+          >
+            {txHash.slice(0, 6)}…{txHash.slice(-4)} ↗
+          </a>
+        )}
         {toolCall.duration !== undefined && (
           <span className="text-xs text-zinc-600 font-mono">
             {formatDuration(toolCall.duration)}

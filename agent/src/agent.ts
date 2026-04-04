@@ -315,6 +315,7 @@ export async function runAgent(
   conversationHistory: AgentMessage[],
   onToolCall?: (toolCall: ToolCallInfo) => void,
   onText?: (text: string) => void,
+  onToolStart?: (info: { name: string; input: Record<string, unknown> }) => void,
 ): Promise<{ response: string; toolCalls: ToolCallInfo[] }> {
   const anthropic = getAnthropicClient()
   const allToolCalls: ToolCallInfo[] = []
@@ -390,6 +391,7 @@ export async function runAgent(
 
     for (const toolUse of toolUseBlocks) {
       const startTime = Date.now()
+      onToolStart?.({ name: toolUse.name, input: toolUse.input })
 
       const result = await executeTool(toolUse.name, toolUse.input)
 
