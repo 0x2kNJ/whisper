@@ -1426,25 +1426,48 @@ export async function executeTool(
         if (!strategy) {
           return JSON.stringify({ success: false, error: `Strategy ${id} not found` })
         }
-        // Convert strategy to PayrollConfig format for dry run
-        const config = {
-          id: strategy.id,
-          name: strategy.name,
-          recipients: strategy.recipients,
-          token: strategy.token || '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-          schedule: strategy.schedule,
-          ownerAddress: '0x712B593eB5Ae6dE062206880BE1BD0121a86ec21',
-          signature: 'dry-run',
-          createdAt: strategy.createdAt,
+
+        const client = getUnlinkClient()
+        const tokenAddress = strategy.token || baseSepolia.tokens.USDC.address
+        const results: Array<{ name: string; amount: string; success: boolean; txHash?: string; error?: string }> = []
+
+        // Execute transfers sequentially with retry
+        for (const recipient of strategy.recipients) {
+          // Resolve recipient address
+          let addr = recipient.address || recipient.name
+          if (!addr.startsWith('unlink1') && !addr.startsWith('0x')) {
+            const resolved = getAddress(addr)
+            if (resolved) addr = resolved
+          }
+
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const result = await transfer(client, {
+                token: tokenAddress,
+                recipientAddress: addr,
+                amount: recipient.amount,
+                skipPolling: true,
+              })
+              results.push({ name: recipient.name || addr, amount: recipient.amount, success: true, txHash: result.txHash })
+              break
+            } catch (err) {
+              if (attempt === 0) {
+                await new Promise((r) => setTimeout(r, 3000))
+                continue
+              }
+              results.push({ name: recipient.name || addr, amount: recipient.amount, success: false, error: err instanceof Error ? err.message : String(err) })
+            }
+          }
         }
-        const output = await dryRunPayroll(config as any)
+
+        const succeeded = results.filter((r) => r.success).length
         return JSON.stringify({
-          success: true,
-          mode: 'dry_run',
+          success: succeeded > 0,
+          mode: 'executed',
           strategy: strategy.name,
-          recipients: strategy.recipients.length,
-          output,
-          message: `Dry run complete for "${strategy.name}". In production, this would execute ${strategy.recipients.length} private payments via Unlink.`,
+          results,
+          summary: `${succeeded}/${results.length} payments executed privately via Unlink`,
+          message: `Executed payroll "${strategy.name}": ${succeeded} of ${results.length} payments sent.`,
         })
       }
 
