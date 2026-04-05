@@ -34,18 +34,37 @@ function humanName(raw: unknown): string {
   const s = String(raw || 'unknown')
   // ENS name — show as-is
   if (s.endsWith('.eth')) return s
-  // Raw unlink address — truncate
-  if (s.startsWith('unlink1')) return `${s.slice(0, 10)}…${s.slice(-4)}`
+  // Short name (likely already resolved) — show as-is
+  if (!s.startsWith('unlink1') && !s.startsWith('0x') && s.length < 40) return s
+  // Raw unlink address — show as whisper.eth
+  if (s.startsWith('unlink1')) return 'whisper.eth'
   // EVM address — truncate
   if (s.startsWith('0x') && s.length > 12) return `${s.slice(0, 6)}…${s.slice(-4)}`
   return s
 }
 
+function extractNameFromResult(tc: { result?: string }): string | null {
+  if (!tc.result) return null
+  try {
+    const r = typeof tc.result === 'string' ? JSON.parse(tc.result) : tc.result
+    // Check verifyUrl for ENS name: /verify/alice.whisper.eth
+    if (r.verifyUrl && typeof r.verifyUrl === 'string') {
+      const match = r.verifyUrl.match(/\/verify\/([^/]+\.eth)/)
+      if (match) return match[1]
+    }
+    // Check recipient field
+    if (r.recipient && typeof r.recipient === 'string' && r.recipient.endsWith('.eth')) return r.recipient
+  } catch {}
+  return null
+}
+
 function buildTitle(tc: { name: string; input?: Record<string, unknown>; result?: string }): string {
   const input = tc.input || {}
   switch (tc.name) {
-    case 'private_transfer':
-      return `Private transfer — ${humanName(input.recipient || input.recipientAddress)}`
+    case 'private_transfer': {
+      const name = extractNameFromResult(tc) || humanName(input.recipient || input.recipientAddress)
+      return `Private transfer — ${name}`
+    }
     case 'batch_private_transfer':
       return `Batch transfer — ${Array.isArray(input.transfers) ? input.transfers.length : '?'} recipients`
     case 'schedule_payroll':
