@@ -3,16 +3,25 @@ import { privateKeyToAccount } from 'viem/accounts'
 
 export const dynamic = 'force-dynamic'
 import { baseSepolia, getEnvOrThrow } from '@/agent/config'
-import { createUnlinkClientWrapper, getBalances } from '@/agent/unlink'
+import { createUnlinkClientWrapper, getBalances, type UnlinkClient } from '@/agent/unlink'
 
 const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
 const WETH_ADDR = '0x4200000000000000000000000000000000000006'
 
-export async function GET() {
-  try {
+// Singleton client — same pattern as tools.ts to avoid initialization race
+let _client: UnlinkClient | null = null
+function getClient(): UnlinkClient {
+  if (!_client) {
     const mnemonic = getEnvOrThrow('UNLINK_MNEMONIC')
     const rpcUrl = baseSepolia.rpcUrl || getEnvOrThrow('BASE_SEPOLIA_RPC_URL')
-    const client = createUnlinkClientWrapper(mnemonic, rpcUrl)
+    _client = createUnlinkClientWrapper(mnemonic, rpcUrl)
+  }
+  return _client
+}
+
+export async function GET() {
+  try {
+    const client = getClient()
 
     let wallet = client.evmAddress
     try {
@@ -21,7 +30,6 @@ export async function GET() {
       wallet = account.address
     } catch {}
 
-    // SDK pool balances only — no cache
     let poolUsdc = 0
     let poolWeth = 0
 
