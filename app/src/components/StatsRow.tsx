@@ -32,7 +32,7 @@ export default function StatsRow({ balances, loading, onRebalance, onRefresh }: 
   // Target policy
   const targetUsdc = 80
   const targetWeth = 20
-  const needsRebalance = Math.abs(usdcPct - targetUsdc) > 5
+  const needsRebalance = false
 
   return (
     <div className="px-4 sm:px-7 pb-6">
