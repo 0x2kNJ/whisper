@@ -50,7 +50,7 @@ function formatInline(text: string, keyPrefix: string): React.ReactNode {
       const linkMatch = seg.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
       if (linkMatch) {
         return (
-          <a key={k} href={linkMatch[2]} className="text-[#c8d8ff] hover:underline transition-colors">
+          <a key={k} href={linkMatch[2]} target="_blank" rel="noopener noreferrer" className="text-[#c8d8ff] hover:underline transition-colors">
             {linkMatch[1]}
           </a>
         )

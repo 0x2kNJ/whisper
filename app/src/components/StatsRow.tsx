@@ -22,8 +22,8 @@ export default function StatsRow({ balances, loading, onRebalance, onRefresh }: 
 
   const usdcVal = parseFloat(usdc?.balance || '0')
   const wethVal = parseFloat(weth?.balance || '0')
-  // Approximate WETH in USD terms (testnet, rough)
-  const wethUsd = wethVal * 2600
+  // WETH in USD terms — using testnet Uniswap pool price (~330 USDC/WETH)
+  const wethUsd = wethVal * 330
   const totalUsd = usdcVal + wethUsd
 
   const usdcPct = totalUsd > 0 ? Math.round((usdcVal / totalUsd) * 100) : 100

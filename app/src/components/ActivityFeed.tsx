@@ -76,12 +76,21 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
     <div className="bg-[rgba(255,255,255,0.02)] backdrop-blur-sm border border-[rgba(255,255,255,0.06)] rounded-[14px] overflow-hidden">
       {items.map((item, i) => {
         const config = iconConfig[item.type] || iconConfig.transfer
+        const explorerHref = item.txHash?.startsWith('0x')
+          ? item.type === 'escrow'
+            ? `https://testnet.arcscan.app/tx/${item.txHash}`
+            : `https://sepolia.basescan.org/tx/${item.txHash}`
+          : 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482#internaltx'
         return (
-          <div
+          <a
             key={item.id}
-            className={`flex items-center gap-3.5 px-[18px] py-3.5 hover:bg-[rgba(200,216,255,0.03)] cursor-pointer transition-colors duration-150 ${
+            href={explorerHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-center gap-3.5 px-[18px] py-3.5 hover:bg-[rgba(200,216,255,0.03)] cursor-pointer transition-colors duration-150 no-underline ${
               i < items.length - 1 ? 'border-b border-[rgba(255,255,255,0.03)]' : ''
             }`}
+            title={item.txHash?.startsWith('0x') ? 'View transaction on explorer' : 'View pool transactions on BaseScan'}
           >
             {/* Icon */}
             <div
@@ -111,25 +120,12 @@ export default function ActivityFeed({ items, loading }: ActivityFeedProps) {
               )}
               <div className="text-[10px] text-zinc-500 flex items-center justify-end gap-1.5">
                 {formatRelativeTime(item.timestamp)}
-                <a
-                  href={
-                    item.txHash?.startsWith('0x')
-                      ? item.type === 'escrow'
-                        ? `https://testnet.arcscan.app/tx/${item.txHash}`
-                        : `https://sepolia.basescan.org/tx/${item.txHash}`
-                      : 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482'
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="text-[rgba(200,216,255,0.5)] hover:text-[#c8d8ff] transition-colors"
-                  title={item.txHash?.startsWith('0x') ? 'View tx on explorer' : 'View Unlink pool on BaseScan'}
-                >
+                <span className="text-[rgba(200,216,255,0.5)] group-hover:text-[#c8d8ff] transition-colors">
                   ↗
-                </a>
+                </span>
               </div>
             </div>
-          </div>
+          </a>
         )
       })}
     </div>

@@ -1007,10 +1007,12 @@ export async function executeTool(
         const poolUsdc = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === USDC_ADDR.toLowerCase())
         const poolWeth = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === WETH_ADDR.toLowerCase())
 
-        const totalUsdc = parseFloat(onChainUsdc) + parseFloat(poolUsdc?.balance || '0') + parseFloat(cache['USDC']?.balance || '0')
+        const totalUsdc = parseFloat(onChainUsdc) + parseFloat(poolUsdc?.balance || '0')
         const totalWeth = parseFloat(onChainWeth) + parseFloat(poolWeth?.balance || '0') + parseFloat(cache['WETH']?.balance || '0')
 
-        const poolUsdcAmt = parseFloat(poolUsdc?.balance || '0') + parseFloat(cache['USDC']?.balance || '0')
+        // USDC: trust SDK only (cache would double-count deductions)
+        // WETH: SDK doesn't report swap gains, so add cache
+        const poolUsdcAmt = parseFloat(poolUsdc?.balance || '0')
         const poolWethAmt = parseFloat(poolWeth?.balance || '0') + parseFloat(cache['WETH']?.balance || '0')
 
         return JSON.stringify({
@@ -1282,11 +1284,12 @@ export async function executeTool(
           deadline,
         })
 
-        // Cache the swap output for the dashboard (Unlink SDK doesn't report WETH)
+        // Cache WETH gains only (Unlink SDK doesn't report WETH from swaps)
+        // Don't cache USDC deductions — the SDK pool balance handles that
         const tokenOutSymbol = (input.tokenOut as string).toUpperCase()
-        const tokenInSymbol = (input.tokenIn as string).toUpperCase()
-        await updateShieldedBalance(tokenOutSymbol, parseFloat(minAmountOut))
-        await updateShieldedBalance(tokenInSymbol, -parseFloat(amount))
+        if (tokenOutSymbol === 'WETH') {
+          await updateShieldedBalance('WETH', parseFloat(minAmountOut))
+        }
 
         return JSON.stringify({
           success: true,

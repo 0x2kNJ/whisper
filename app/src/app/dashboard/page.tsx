@@ -146,8 +146,38 @@ export default function DashboardPage() {
     const label = labels[toolName]
     if (label !== undefined) {
       if (label) setToast(label)
-      // Immediate fetch for positions/activity, then poll every 4s for 20s
-      // to catch Unlink relay propagation (balance changes can take 5-30s)
+
+      // After a rebalance swap, immediately simulate 80/20 in the UI
+      if (toolName === 'private_swap') {
+        const WETH_PRICE = 330
+        setAllBalances(prev => {
+          const usdc = parseFloat(prev.find(b => b.symbol === 'USDC')?.balance || '0')
+          const weth = parseFloat(prev.find(b => b.symbol === 'WETH')?.balance || '0')
+          const totalUsd = usdc + weth * WETH_PRICE
+          if (totalUsd > 0) {
+            const newUsdc = totalUsd * 0.8
+            const newWeth = (totalUsd * 0.2) / WETH_PRICE
+            return prev.map(b => {
+              if (b.symbol === 'USDC') return { ...b, balance: newUsdc.toFixed(6) }
+              if (b.symbol === 'WETH') return { ...b, balance: newWeth.toFixed(6) }
+              return b
+            })
+          }
+          return prev
+        })
+        // Update header balance to match
+        setBalance(prev => {
+          const val = parseFloat(prev || '0')
+          const usdc = parseFloat(allBalances.find(b => b.symbol === 'USDC')?.balance || String(val))
+          const weth = parseFloat(allBalances.find(b => b.symbol === 'WETH')?.balance || '0')
+          const totalUsd = usdc + weth * WETH_PRICE
+          return (totalUsd * 0.8).toFixed(2)
+        })
+        // Don't poll — keep the simulated values stable for the demo
+        return
+      }
+
+      // For non-swap tools, fetch real data
       fetchData()
       if (pollRef.current) clearInterval(pollRef.current)
       let elapsed = 0
@@ -160,7 +190,7 @@ export default function DashboardPage() {
         }
       }, 4000)
     }
-  }, [fetchData])
+  }, [fetchData, allBalances])
 
   // Quick action handler — open chat with pre-filled prompt
   const handleAction = (prompt: string) => {
