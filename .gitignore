@@ -13,3 +13,6 @@ broadcast/
 .next/
 next-env.d.ts
 .gstack/
+.conductor/
+.superpowers/
+docs/superpowers/
