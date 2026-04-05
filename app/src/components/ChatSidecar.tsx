@@ -277,6 +277,11 @@ export default function ChatSidecar({
                 { role: 'assistant', content: finalResponse },
               ])
 
+              // Final refresh after all tools complete
+              if (toolCalls?.length) {
+                onToolComplete?.(toolCalls[toolCalls.length - 1].name)
+              }
+
               // Save to conversation
               if (convId) {
                 try {

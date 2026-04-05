@@ -254,9 +254,6 @@ export default function DashboardPage() {
           <h2 className="text-[13px] font-medium uppercase tracking-[1.5px] text-zinc-500">
             Active Positions
           </h2>
-          <span className="text-xs text-[rgba(200,216,255,0.6)] cursor-pointer hover:text-[rgba(200,216,255,1)] transition-colors">
-            View all positions →
-          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-4 sm:px-7 pb-6">
@@ -304,9 +301,6 @@ export default function DashboardPage() {
           <h2 className="text-[13px] font-medium uppercase tracking-[1.5px] text-zinc-500">
             Recent Activity
           </h2>
-          <span className="text-xs text-[rgba(200,216,255,0.6)] cursor-pointer hover:text-[rgba(200,216,255,1)] transition-colors">
-            Export CSV →
-          </span>
         </div>
 
         <div className="px-4 sm:px-7 pb-8">

@@ -50,7 +50,7 @@ export default function ChatPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [agentHistory, setAgentHistory] = useState<AgentHistoryMessage[]>([])
   const bottomRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   const [conversations, setConversations] = useState<ConversationSummary[]>([])
@@ -374,7 +374,7 @@ export default function ChatPage() {
     sendMessage(input)
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage(input)
@@ -506,7 +506,7 @@ export default function ChatPage() {
           >
             <div className="flex-1 relative">
               <input
-                ref={inputRef as React.RefObject<HTMLInputElement>}
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
