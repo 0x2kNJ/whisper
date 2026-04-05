@@ -4,6 +4,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 export const dynamic = 'force-dynamic'
 import { baseSepolia, getEnvOrThrow } from '@/agent/config'
 import { createUnlinkClientWrapper, getBalances, type UnlinkClient } from '@/agent/unlink'
+import { dbReadBalanceCache } from '@/lib/db'
 
 const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
 const WETH_ADDR = '0x4200000000000000000000000000000000000006'
@@ -38,6 +39,14 @@ export async function GET() {
       const addr = b.token.toLowerCase()
       if (addr === USDC_ADDR) poolUsdc += parseFloat(b.balance)
       else if (addr === WETH_ADDR) poolWeth += parseFloat(b.balance)
+    }
+
+    // SDK doesn't report WETH from swaps — check cache
+    if (poolWeth === 0) {
+      try {
+        const cache = await dbReadBalanceCache()
+        if (cache['WETH']) poolWeth = Math.max(0, parseFloat(cache['WETH'].balance))
+      } catch {}
     }
 
     return NextResponse.json({

@@ -987,6 +987,14 @@ export async function executeTool(
           else if (addr === WETH_ADDR) wethAmt += parseFloat(b.balance)
         }
 
+        // SDK doesn't report WETH from swaps — check cache
+        if (wethAmt === 0) {
+          try {
+            const cache = await dbReadBalanceCache()
+            if (cache['WETH']) wethAmt = Math.max(0, parseFloat(cache['WETH'].balance))
+          } catch {}
+        }
+
         return JSON.stringify({
           success: true,
           balances: {
@@ -1250,10 +1258,16 @@ export async function executeTool(
           deadline,
         })
 
+        // Track WETH in cache (SDK doesn't report WETH from swaps)
+        const tokenOutSymbol = (input.tokenOut as string).toUpperCase()
+        if (tokenOutSymbol === 'WETH') {
+          await dbWriteBalanceCache('WETH', minAmountOut)
+        }
+
         return JSON.stringify({
           success: true,
           txHash: result.txHash,
-          explorerUrl: `https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482#internaltx`,
+          explorerUrl: baseSepoliaExplorerUrl(result.txHash),
           tokenIn: input.tokenIn,
           tokenOut: input.tokenOut,
           amountIn: amount,
