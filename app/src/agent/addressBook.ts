@@ -75,6 +75,11 @@ export function getAddress(name: string): string | undefined {
   for (const [key, val] of Object.entries(_book)) {
     if (key.toLowerCase() === lower) return val
   }
+  // Try with .whisper.eth suffix
+  const withSuffix = `${lower}.whisper.eth`
+  for (const [key, val] of Object.entries(_book)) {
+    if (key.toLowerCase() === withSuffix) return val
+  }
   return undefined
 }
 
