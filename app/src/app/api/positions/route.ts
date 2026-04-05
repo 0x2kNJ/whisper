@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { dbListStrategies } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,28 +21,23 @@ interface Strategy {
 
 export async function GET() {
   try {
-    const strategiesDir = path.resolve(process.cwd(), '../agent/data/strategies')
+    const rows = await dbListStrategies()
     const positions: Array<Strategy & { progress: number; executionCount: number }> = []
 
-    if (fs.existsSync(strategiesDir)) {
-      const files = fs.readdirSync(strategiesDir).filter(f => f.endsWith('.json'))
+    for (const row of rows) {
+      try {
+        const data: Strategy = JSON.parse(row.data)
 
-      for (const file of files) {
-        try {
-          const raw = fs.readFileSync(path.join(strategiesDir, file), 'utf-8')
-          const data: Strategy = JSON.parse(raw)
+        const spent = parseFloat(data.spent || '0')
+        const budget = parseFloat(data.totalBudget || '0')
+        const progress = budget > 0 ? Math.round((spent / budget) * 100) : 0
 
-          const spent = parseFloat(data.spent || '0')
-          const budget = parseFloat(data.totalBudget || '0')
-          const progress = budget > 0 ? Math.round((spent / budget) * 100) : 0
-
-          positions.push({
-            ...data,
-            progress,
-            executionCount: data.executions?.length || 0,
-          })
-        } catch {}
-      }
+        positions.push({
+          ...data,
+          progress,
+          executionCount: data.executions?.length || 0,
+        })
+      } catch {}
     }
 
     // Sort: active first, then by lastExecutedAt desc, then by createdAt desc

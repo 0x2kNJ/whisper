@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-import { getAssistantMessagesWithToolCalls } from '@/lib/db'
+import { getAssistantMessagesWithToolCalls, dbListStrategies } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +25,7 @@ export async function GET() {
     monthStart.setDate(1)
     monthStart.setHours(0, 0, 0, 0)
 
-    const messages = getAssistantMessagesWithToolCalls(monthStart.getTime())
+    const messages = await getAssistantMessagesWithToolCalls(monthStart.getTime())
 
     let totalMoved = 0
     let transactionCount = 0
@@ -66,17 +64,16 @@ export async function GET() {
       } catch {}
     }
 
-    // Count active strategies
-    const strategiesDir = path.resolve(process.cwd(), '../agent/data/strategies')
+    // Count active strategies from Turso
     let activePositions = 0
     let activePayrolls = 0
     let activeEscrows = 0
 
-    if (fs.existsSync(strategiesDir)) {
-      const files = fs.readdirSync(strategiesDir).filter(f => f.endsWith('.json'))
-      for (const file of files) {
+    try {
+      const strategyRows = await dbListStrategies()
+      for (const row of strategyRows) {
         try {
-          const data = JSON.parse(fs.readFileSync(path.join(strategiesDir, file), 'utf-8'))
+          const data = JSON.parse(row.data)
           if (data.status === 'active') {
             activePositions++
             if (data.type === 'standard' || data.type === 'contractor') activePayrolls++
@@ -84,7 +81,7 @@ export async function GET() {
           }
         } catch {}
       }
-    }
+    } catch {}
 
     const privacyScore = totalTxCount > 0
       ? Math.round((privateCount / totalTxCount) * 100)

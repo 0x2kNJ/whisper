@@ -1,48 +1,33 @@
 import { NextResponse } from 'next/server'
 import { createPublicClient, http, formatUnits } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
 import { baseSepolia as baseSepoliaChain } from 'viem/chains'
-import path from 'path'
-import { readFileSync } from 'fs'
-
-async function tryImport(basePath: string) {
-  const candidates = [
-    basePath.replace(/\.ts$/, '.js'),
-    basePath,
-    basePath.replace('/src/', '/dist/').replace(/\.ts$/, '.js'),
-  ]
-  for (const c of candidates) {
-    try {
-      return await import(/* webpackIgnore: true */ c)
-    } catch {
-      continue
-    }
-  }
-  throw new Error(`Could not import ${basePath}`)
-}
+import { baseSepolia, arcTestnet, getEnvOrThrow } from '@/agent/config'
+import { createUnlinkClientWrapper, getBalances } from '@/agent/unlink'
+import { dbReadBalanceCache } from '@/lib/db'
 
 export async function GET() {
   try {
-    const agentConfigPath =
-      process.env.AGENT_MODULE_PATH
-        ? path.resolve(path.dirname(process.env.AGENT_MODULE_PATH), 'config.js')
-        : path.resolve(process.cwd(), '../agent/src/config.ts')
-
-    const unlinkPath =
-      process.env.AGENT_MODULE_PATH
-        ? path.resolve(path.dirname(process.env.AGENT_MODULE_PATH), 'unlink.js')
-        : path.resolve(process.cwd(), '../agent/src/unlink.ts')
-
-    const configMod = await tryImport(agentConfigPath)
-    const unlinkMod = await tryImport(unlinkPath)
-
-    const { baseSepolia, arcTestnet, getEnvOrThrow } = configMod
-    const { createUnlinkClientWrapper, getBalances } = unlinkMod
-
     const mnemonic = getEnvOrThrow('UNLINK_MNEMONIC')
     const rpcUrl = baseSepolia.rpcUrl || getEnvOrThrow('BASE_SEPOLIA_RPC_URL')
     const client = createUnlinkClientWrapper(mnemonic, rpcUrl)
 
-    const wallet = client.evmAddress
+    // Use the public wallet (PRIVATE_KEY) as the displayed address — that's where on-chain funds live
+    let wallet = client.evmAddress
+    try {
+      const pk = getEnvOrThrow('PRIVATE_KEY')
+      const account = privateKeyToAccount(pk as `0x${string}`)
+      wallet = account.address
+    } catch {}
+
+    const USDC_ADDRESS = baseSepolia.tokens.USDC.address
+    const onChainClient = createPublicClient({
+      chain: baseSepoliaChain,
+      transport: http(rpcUrl),
+    })
+
+    // Check on-chain USDC balance for the public wallet
+    const erc20Abi = [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const
 
     const rawBalances = await getBalances(client)
 
@@ -64,7 +49,6 @@ export async function GET() {
 
     const mapped = rawBalances
       .filter((b: { token: string }) => {
-        // Only include known tokens — filter out unrecognized pool test tokens
         const addr = b.token.toLowerCase()
         return !!allTokens.find(t => t.address.toLowerCase() === addr) || !!POOL_TOKEN_MAP[addr]
       })
@@ -85,19 +69,36 @@ export async function GET() {
         },
       )
 
-    // Also check on-chain WETH balance (Unlink SDK doesn't always report it)
+    // Check on-chain public wallet balances (USDC + WETH)
     try {
       const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'
-      const onChainClient = createPublicClient({
-        chain: baseSepoliaChain,
-        transport: http(rpcUrl),
-      })
-      const wethBalance = await onChainClient.readContract({
-        address: WETH_ADDRESS as `0x${string}`,
-        abi: [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }],
-        functionName: 'balanceOf',
-        args: [wallet as `0x${string}`],
-      })
+
+      const [usdcBalance, wethBalance] = await Promise.all([
+        onChainClient.readContract({
+          address: USDC_ADDRESS as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [wallet as `0x${string}`],
+        }),
+        onChainClient.readContract({
+          address: WETH_ADDRESS as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [wallet as `0x${string}`],
+        }),
+      ])
+
+      const usdcFormatted = formatUnits(usdcBalance as bigint, 6)
+      if (parseFloat(usdcFormatted) > 0) {
+        mapped.push({
+          symbol: 'USDC',
+          balance: usdcFormatted,
+          chain: 'Base Sepolia',
+          tokenAddress: USDC_ADDRESS,
+          explorerUrl: `https://sepolia.basescan.org/token/${USDC_ADDRESS}`,
+        })
+      }
+
       const wethFormatted = formatUnits(wethBalance as bigint, 18)
       if (parseFloat(wethFormatted) > 0) {
         mapped.push({
@@ -109,21 +110,28 @@ export async function GET() {
         })
       }
     } catch {
-      // On-chain WETH check failed — proceed with SDK balances only
+      // On-chain balance check failed — proceed with SDK balances only
     }
 
-    // Read shielded balance cache (tracks WETH from swaps that SDK doesn't report)
+    // Merge shielded balance cache (pool deltas from swaps/deposits) into balances
     try {
-      const cachePath = path.resolve(process.cwd(), '../agent/data/shielded-balances.json')
-      const cache = JSON.parse(readFileSync(cachePath, 'utf-8')) as Record<string, { balance: string }>
+      const cache = await dbReadBalanceCache()
       for (const [symbol, entry] of Object.entries(cache)) {
-        const bal = parseFloat(entry.balance)
-        if (bal > 0 && !mapped.find((b: { symbol: string }) => b.symbol === symbol)) {
+        const poolBal = parseFloat(entry.balance)
+        if (poolBal === 0) continue
+
+        const existing = mapped.find((b: { symbol: string }) => b.symbol === symbol)
+        if (existing) {
+          // Add pool balance to on-chain balance
+          const combined = parseFloat(existing.balance) + poolBal
+          existing.balance = Math.max(0, combined).toString()
+        } else if (poolBal > 0) {
+          // New token only in the pool
           mapped.push({
             symbol,
             balance: entry.balance,
             chain: 'Base Sepolia',
-            tokenAddress: symbol === 'WETH' ? '0x4200000000000000000000000000000000000006' : '',
+            tokenAddress: symbol === 'WETH' ? '0x4200000000000000000000000000000000000006' : USDC_ADDRESS,
             explorerUrl: null,
           })
         }
@@ -132,7 +140,7 @@ export async function GET() {
       // Cache doesn't exist yet — skip
     }
 
-    // Aggregate same-symbol balances into one entry (pool tokens + direct tokens)
+    // Aggregate same-symbol balances into one entry
     const aggregated: Record<string, typeof mapped[0]> = {}
     for (const b of mapped) {
       const key = `${b.symbol}-${b.chain}`
