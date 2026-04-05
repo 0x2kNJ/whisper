@@ -979,19 +979,19 @@ export async function executeTool(
         const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
         const WETH_ADDR = '0x4200000000000000000000000000000000000006'
 
-        const poolUsdc = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === USDC_ADDR)
-        const poolWeth = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === WETH_ADDR)
-
-        // USDC: trust SDK only. WETH: SDK doesn't report swap gains, add cache.
-        const cache = await readBalanceCache()
-        const usdcAmt = Math.max(0, parseFloat(poolUsdc?.balance || '0'))
-        const wethAmt = Math.max(0, parseFloat(poolWeth?.balance || '0') + parseFloat(cache['WETH']?.balance || '0'))
+        let usdcAmt = 0
+        let wethAmt = 0
+        for (const b of poolBalances as Array<{ token: string; balance: string }>) {
+          const addr = b.token.toLowerCase()
+          if (addr === USDC_ADDR) usdcAmt += parseFloat(b.balance)
+          else if (addr === WETH_ADDR) wethAmt += parseFloat(b.balance)
+        }
 
         return JSON.stringify({
           success: true,
           balances: {
-            USDC: usdcAmt.toFixed(6),
-            WETH: wethAmt.toFixed(6),
+            USDC: Math.max(0, usdcAmt).toFixed(6),
+            WETH: Math.max(0, wethAmt).toFixed(6),
           },
           note: 'These are your Unlink privacy pool balances. Use 330 USDC/WETH for value calculations on this testnet.',
         })
@@ -1249,13 +1249,6 @@ export async function executeTool(
           outputs: [{ token: tokenOutInfo.address, minAmount: minAmountOut }],
           deadline,
         })
-
-        // Cache WETH gains only (Unlink SDK doesn't report WETH from swaps)
-        // Don't cache USDC deductions — the SDK pool balance handles that
-        const tokenOutSymbol = (input.tokenOut as string).toUpperCase()
-        if (tokenOutSymbol === 'WETH') {
-          await updateShieldedBalance('WETH', parseFloat(minAmountOut))
-        }
 
         return JSON.stringify({
           success: true,
