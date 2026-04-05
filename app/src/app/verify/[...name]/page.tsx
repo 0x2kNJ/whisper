@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 interface VerificationResult {
@@ -23,6 +23,7 @@ interface VerificationResult {
 }
 
 export default function VerifyPage() {
+  const router = useRouter()
   const params = useParams()
   // Catch-all route: params.name is an array like ["alice.whisper.eth"] or ["alice","whisper","eth"]
   const nameSegments = params.name as string[]
@@ -55,12 +56,12 @@ export default function VerifyPage() {
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="flex items-center justify-between mb-8">
-          <Link href="/dashboard" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-xs">
+          <button onClick={() => router.back()} className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-xs">
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>
             Back
-          </Link>
+          </button>
           <Link href="/" className="inline-flex items-center gap-2 group">
             <div className="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(200,216,255,0.15)] bg-[rgba(10,10,15,0.6)] text-[9px] font-bold tracking-widest text-[#c8d8ff]" style={{boxShadow: '0 0 12px rgba(200,216,255,0.06)'}}>
               W
