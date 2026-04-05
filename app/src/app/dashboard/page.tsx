@@ -111,7 +111,7 @@ export default function DashboardPage() {
         const usdc = balancesRes.balances.find(
           (b: { symbol: string }) => b.symbol === 'USDC'
         )
-        if (usdc) setBalance(usdc.balance)
+        if (usdc) setBalance(parseFloat(usdc.balance).toFixed(2))
       }
       if (balancesRes?.wallet) setWalletAddr(balancesRes.wallet)
     } catch {
@@ -224,11 +224,9 @@ export default function DashboardPage() {
                 <AnimatedBalance value={balance} />
               </span>
               <span className="text-[11px] text-zinc-500">USDC</span>
-              {walletAddr && (
-                <span className="text-[10px] text-zinc-500 font-mono">
-                  {truncateAddr(walletAddr)}
-                </span>
-              )}
+              <span className="text-[10px] text-zinc-500 font-mono">
+                whisper.eth
+              </span>
             </div>
           </div>
         </div>
@@ -247,6 +245,7 @@ export default function DashboardPage() {
           balances={allBalances}
           loading={loading}
           onRebalance={() => sendChat('Rebalance treasury to 80% USDC / 20% WETH')}
+          onRefresh={fetchData}
         />
 
         {/* Active Positions */}
@@ -275,10 +274,10 @@ export default function DashboardPage() {
                 progress={pos.progress}
                 progressLabel={pos.totalBudget ? `$${pos.spent} of $${pos.totalBudget} budget spent` : undefined}
                 recipients={pos.recipients.map(r => ({ name: r.name || r.address.slice(0, 6) }))}
-                verifyLinks={pos.recipients.filter(r => r.name).map(r => ({
+                verifyLinks={pos.executionCount > 0 ? pos.recipients.filter(r => r.name).map(r => ({
                   name: r.name,
                   href: `/verify/${r.name.toLowerCase()}.whisper.eth`,
-                }))}
+                })) : []}
                 footer={pos.lastExecutedAt ? `Last run: ${new Date(pos.lastExecutedAt).toLocaleDateString()}` : `Created: ${new Date(pos.createdAt).toLocaleDateString()}`}
                 onClick={() => handleAction(`Tell me about the ${pos.name} strategy`)}
                 onClose={async (id) => {

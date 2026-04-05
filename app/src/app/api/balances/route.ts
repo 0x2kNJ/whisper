@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
+import { formatUnits } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+
+export const dynamic = 'force-dynamic'
 import { baseSepolia, getEnvOrThrow } from '@/agent/config'
 import { createUnlinkClientWrapper, getBalances } from '@/agent/unlink'
 import { dbReadBalanceCache } from '@/lib/db'
@@ -18,60 +21,59 @@ export async function GET() {
       wallet = account.address
     } catch {}
 
-    const POOL_TOKEN_MAP: Record<string, { symbol: string; decimals: number }> = {
-      '0x036cbd53842c5426634e7929541ec2318f3dcf7e': { symbol: 'USDC', decimals: 6 },
-      '0x4200000000000000000000000000000000000006': { symbol: 'WETH', decimals: 18 },
-    }
+    const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
+    const WETH_ADDR = '0x4200000000000000000000000000000000000006'
 
-    // Only show Unlink pool balances
+    // Get Unlink pool balances
     const rawBalances = await getBalances(client)
 
-    const mapped: Array<{ symbol: string; balance: string; chain: string; tokenAddress: string; explorerUrl: string | null }> = []
+    let poolUsdc = 0
+    let poolWeth = 0
 
-    for (const b of rawBalances as Array<{ token: string; balance: string; symbol: string }>) {
-      const info = POOL_TOKEN_MAP[b.token.toLowerCase()]
-      if (!info) continue
-      mapped.push({
-        symbol: info.symbol,
-        balance: b.balance,
-        chain: 'Base Sepolia',
-        tokenAddress: b.token,
-        explorerUrl: `https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482`,
-      })
+    for (const b of rawBalances as Array<{ token: string; balance: string }>) {
+      const addr = b.token.toLowerCase()
+      if (addr === USDC_ADDR) {
+        poolUsdc += parseFloat(b.balance)
+      } else if (addr === WETH_ADDR) {
+        poolWeth += parseFloat(b.balance)
+      }
     }
 
-    // Merge shielded balance cache (deltas from swaps)
+    // Merge with balance cache for tokens the pool doesn't report.
+    // The cache stores accumulated swap deltas (e.g. WETH received from swaps).
+    // For tokens the pool DOES report (USDC), the pool value is authoritative
+    // since the pool balance already reflects settled swaps. Blindly adding
+    // cache deltas to pool values would double-subtract spent amounts.
     try {
       const cache = await dbReadBalanceCache()
-      for (const [symbol, entry] of Object.entries(cache)) {
-        const poolBal = parseFloat(entry.balance)
-        if (poolBal === 0) continue
-
-        const existing = mapped.find((b) => b.symbol === symbol)
-        if (existing) {
-          const combined = parseFloat(existing.balance) + poolBal
-          existing.balance = Math.max(0, combined).toString()
-        } else if (poolBal > 0) {
-          mapped.push({
-            symbol,
-            balance: entry.balance,
-            chain: 'Base Sepolia',
-            tokenAddress: symbol === 'WETH' ? '0x4200000000000000000000000000000000000006' : baseSepolia.tokens.USDC.address,
-            explorerUrl: `https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482`,
-          })
-        }
+      if (poolWeth === 0 && cache['WETH']) {
+        poolWeth = Math.max(0, parseFloat(cache['WETH'].balance))
+      }
+      // If pool returned 0 USDC but cache has a positive delta, use cache
+      // (covers the window before the pool updates after a deposit)
+      if (poolUsdc === 0 && cache['USDC'] && parseFloat(cache['USDC'].balance) > 0) {
+        poolUsdc = parseFloat(cache['USDC'].balance)
       }
     } catch {}
 
-    // Ensure USDC and WETH always appear (even if 0)
-    if (!mapped.find((b) => b.symbol === 'USDC')) {
-      mapped.push({ symbol: 'USDC', balance: '0', chain: 'Base Sepolia', tokenAddress: baseSepolia.tokens.USDC.address, explorerUrl: null })
-    }
-    if (!mapped.find((b) => b.symbol === 'WETH')) {
-      mapped.push({ symbol: 'WETH', balance: '0', chain: 'Base Sepolia', tokenAddress: '0x4200000000000000000000000000000000000006', explorerUrl: null })
-    }
+    const balances = [
+      {
+        symbol: 'USDC',
+        balance: poolUsdc.toFixed(6),
+        chain: 'Base Sepolia',
+        tokenAddress: baseSepolia.tokens.USDC.address,
+        explorerUrl: 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482',
+      },
+      {
+        symbol: 'WETH',
+        balance: poolWeth.toFixed(6),
+        chain: 'Base Sepolia',
+        tokenAddress: WETH_ADDR,
+        explorerUrl: 'https://sepolia.basescan.org/address/0x647f9b99af97e4b79DD9Dd6de3b583236352f482',
+      },
+    ]
 
-    return NextResponse.json({ wallet, balances: mapped })
+    return NextResponse.json({ wallet, balances })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch balances'
     return NextResponse.json({ error: message, wallet: null, balances: [] }, { status: 500 })

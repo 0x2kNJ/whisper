@@ -4,9 +4,10 @@ interface TreasuryAllocationProps {
   balances?: Array<{ symbol: string; balance: string }>
   loading?: boolean
   onRebalance?: () => void
+  onRefresh?: () => void
 }
 
-export default function StatsRow({ balances, loading, onRebalance }: TreasuryAllocationProps) {
+export default function StatsRow({ balances, loading, onRebalance, onRefresh }: TreasuryAllocationProps) {
   if (loading) {
     return (
       <div className="px-4 sm:px-7 pb-6">
@@ -55,6 +56,16 @@ export default function StatsRow({ balances, loading, onRebalance }: TreasuryAll
             <span className="text-[10px] text-zinc-600">
               🔒 100% shielded
             </span>
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="text-[10px] px-1.5 py-1 rounded-md transition-all hover:bg-[rgba(200,216,255,0.08)]"
+                style={{ color: 'rgba(200,216,255,0.4)' }}
+                title="Refresh balances"
+              >
+                ↻
+              </button>
+            )}
             {needsRebalance && onRebalance && (
               <button
                 onClick={onRebalance}
