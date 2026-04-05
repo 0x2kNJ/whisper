@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
-import { formatUnits } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 export const dynamic = 'force-dynamic'
 import { baseSepolia, getEnvOrThrow } from '@/agent/config'
 import { createUnlinkClientWrapper, getBalances } from '@/agent/unlink'
 import { dbReadBalanceCache } from '@/lib/db'
+
+const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
+const WETH_ADDR = '0x4200000000000000000000000000000000000006'
 
 export async function GET() {
   try {
@@ -21,38 +23,34 @@ export async function GET() {
       wallet = account.address
     } catch {}
 
-    const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
-    const WETH_ADDR = '0x4200000000000000000000000000000000000006'
-
-    // Get Unlink pool balances
-    const rawBalances = await getBalances(client)
-
+    // Try to get pool balances from Unlink SDK
     let poolUsdc = 0
     let poolWeth = 0
+    let poolError: string | null = null
 
-    for (const b of rawBalances as Array<{ token: string; balance: string }>) {
-      const addr = b.token.toLowerCase()
-      if (addr === USDC_ADDR) {
-        poolUsdc += parseFloat(b.balance)
-      } else if (addr === WETH_ADDR) {
-        poolWeth += parseFloat(b.balance)
+    try {
+      const rawBalances = await getBalances(client)
+      for (const b of rawBalances as Array<{ token: string; balance: string }>) {
+        const addr = b.token.toLowerCase()
+        if (addr === USDC_ADDR) poolUsdc += parseFloat(b.balance)
+        else if (addr === WETH_ADDR) poolWeth += parseFloat(b.balance)
       }
+    } catch (err) {
+      poolError = err instanceof Error ? err.message : String(err)
+      console.error('[balances] Unlink pool fetch failed:', poolError)
     }
 
-    // Merge with balance cache for tokens the pool doesn't report.
-    // The cache stores accumulated swap deltas (e.g. WETH received from swaps).
-    // For tokens the pool DOES report (USDC), the pool value is authoritative
-    // since the pool balance already reflects settled swaps. Blindly adding
-    // cache deltas to pool values would double-subtract spent amounts.
+    // Merge with balance cache:
+    // - WETH: pool never reports it, always use cache
+    // - USDC: use pool when available, fall back to cache if pool failed
     try {
       const cache = await dbReadBalanceCache()
       if (poolWeth === 0 && cache['WETH']) {
         poolWeth = Math.max(0, parseFloat(cache['WETH'].balance))
       }
-      // If pool returned 0 USDC but cache has a positive delta, use cache
-      // (covers the window before the pool updates after a deposit)
-      if (poolUsdc === 0 && cache['USDC'] && parseFloat(cache['USDC'].balance) > 0) {
-        poolUsdc = parseFloat(cache['USDC'].balance)
+      if (poolUsdc === 0 && cache['USDC']) {
+        const cached = parseFloat(cache['USDC'].balance)
+        if (cached > 0) poolUsdc = cached
       }
     } catch {}
 
@@ -73,9 +71,14 @@ export async function GET() {
       },
     ]
 
-    return NextResponse.json({ wallet, balances })
+    return NextResponse.json({
+      wallet,
+      balances,
+      ...(poolError ? { warning: `Pool fetch failed: ${poolError}` } : {}),
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to fetch balances'
+    console.error('[balances] API error:', message)
     return NextResponse.json({ error: message, wallet: null, balances: [] }, { status: 500 })
   }
 }
