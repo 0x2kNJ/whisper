@@ -976,58 +976,24 @@ export async function executeTool(
         const client = getUnlinkClient()
         const poolBalances = await getBalances(client)
 
-        // Also check on-chain public wallet balances
-        let walletAddress = client.evmAddress
-        try {
-          const pk = getEnvOrThrow('PRIVATE_KEY')
-          const account = privateKeyToAccount(pk as `0x${string}`)
-          walletAddress = account.address
-        } catch {}
+        const USDC_ADDR = baseSepolia.tokens.USDC.address.toLowerCase()
+        const WETH_ADDR = '0x4200000000000000000000000000000000000006'
 
-        const rpcUrl = baseSepolia.rpcUrl || getEnvOrThrow('BASE_SEPOLIA_RPC_URL')
-        const onChainClient = createPublicClient({ chain: { id: baseSepolia.chainId, name: baseSepolia.name, nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: { default: { http: [rpcUrl] } } }, transport: http(rpcUrl) })
+        const poolUsdc = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === USDC_ADDR)
+        const poolWeth = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === WETH_ADDR)
 
-        const erc20Abi = [{ name: 'balanceOf', type: 'function', stateMutability: 'view', inputs: [{ name: '', type: 'address' }], outputs: [{ name: '', type: 'uint256' }] }] as const
-        const USDC_ADDR = baseSepolia.tokens.USDC.address as `0x${string}`
-        const WETH_ADDR = '0x4200000000000000000000000000000000000006' as `0x${string}`
-
-        let onChainUsdc = '0'
-        let onChainWeth = '0'
-        try {
-          const [usdcRaw, wethRaw] = await Promise.all([
-            onChainClient.readContract({ address: USDC_ADDR, abi: erc20Abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
-            onChainClient.readContract({ address: WETH_ADDR, abi: erc20Abi, functionName: 'balanceOf', args: [walletAddress as `0x${string}`] }),
-          ])
-          onChainUsdc = formatUnits(usdcRaw as bigint, 6)
-          onChainWeth = formatUnits(wethRaw as bigint, 18)
-        } catch {}
-
-        // Merge pool + on-chain + cache
+        // USDC: trust SDK only. WETH: SDK doesn't report swap gains, add cache.
         const cache = await readBalanceCache()
-        const poolUsdc = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === USDC_ADDR.toLowerCase())
-        const poolWeth = poolBalances.find((b: { token: string }) => b.token.toLowerCase() === WETH_ADDR.toLowerCase())
-
-        const totalUsdc = parseFloat(onChainUsdc) + parseFloat(poolUsdc?.balance || '0')
-        const totalWeth = parseFloat(onChainWeth) + parseFloat(poolWeth?.balance || '0') + parseFloat(cache['WETH']?.balance || '0')
-
-        // USDC: trust SDK only (cache would double-count deductions)
-        // WETH: SDK doesn't report swap gains, so add cache
-        const poolUsdcAmt = parseFloat(poolUsdc?.balance || '0')
-        const poolWethAmt = parseFloat(poolWeth?.balance || '0') + parseFloat(cache['WETH']?.balance || '0')
+        const usdcAmt = Math.max(0, parseFloat(poolUsdc?.balance || '0'))
+        const wethAmt = Math.max(0, parseFloat(poolWeth?.balance || '0') + parseFloat(cache['WETH']?.balance || '0'))
 
         return JSON.stringify({
           success: true,
-          wallet: walletAddress,
-          totalBalances: {
-            USDC: Math.max(0, totalUsdc).toFixed(6),
-            WETH: Math.max(0, totalWeth).toFixed(6),
+          balances: {
+            USDC: usdcAmt.toFixed(6),
+            WETH: wethAmt.toFixed(6),
           },
-          onChainBalances: { USDC: onChainUsdc, WETH: onChainWeth },
-          poolBalances: {
-            USDC: Math.max(0, poolUsdcAmt).toFixed(6),
-            WETH: Math.max(0, poolWethAmt).toFixed(6),
-          },
-          note: 'totalBalances = on-chain wallet + Unlink pool. Swaps and transfers use pool balances only. Deposit more to increase pool balance.',
+          note: 'These are your Unlink privacy pool balances. Use 330 USDC/WETH for value calculations on this testnet.',
         })
       }
 
