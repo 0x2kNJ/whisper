@@ -4,7 +4,7 @@
 >
 > That sentence triggers ENS resolution, Unlink transfers, strategy creation, and payroll scheduling. One sentence, four backend systems, zero user interaction with wallets.
 
-Whisper's agent is built on Claude Sonnet 4 with Anthropic's `tool_use` protocol. It has 23 tools across 6 categories, and it chains them automatically based on what the user asks for.
+Whisper's agent is built on Claude with Anthropic's `tool_use` protocol. It has 25 tools across 7 categories, and it chains them automatically based on what the user asks for.
 
 ## How the Agent Thinks
 
@@ -72,7 +72,7 @@ Claude reads the `description` field to decide when to use each tool. The `input
 
 **To add a new tool:** Define the schema in `toolDefinitions[]`, add a case to `executeTool()`, and Claude will automatically discover and use it based on the description.
 
-## The 23 Tools
+## The 25 Tools
 
 ### Privacy (5 tools) -- the core value
 
@@ -82,9 +82,9 @@ These are the tools that make Whisper different from every other treasury agent.
 |------|-------------|--------|
 | `check_balance` | Private USDC/WETH balances from ZK pool | -- |
 | `private_transfer` | Fully shielded send (sender + recipient + amount hidden) | `recipient`, `token`, `amount` |
-| `batch_private_transfer` | Send to 2 recipients in one ZK proof | `recipients[]`, `amounts[]` |
+| `batch_private_transfer` | Multi-recipient single ZK proof (faster, avoids UTXO contention) | `recipients[]` |
 | `deposit_to_unlink` | Move tokens from public wallet into privacy pool | `token`, `amount` |
-| `private_cross_chain_transfer` | Bridge USDC to Arc via CCTP, sender hidden | `amount`, `recipient` |
+| `private_cross_chain_transfer` | Bridge USDC to Arc via CCTP V2, sender hidden | `amount`, `recipient` |
 
 ### DeFi (2 tools) -- private swaps
 
@@ -95,14 +95,15 @@ These are the tools that make Whisper different from every other treasury agent.
 
 The swap flow: withdraw from pool -> approve router -> swap on Uniswap -> re-deposit output. The sender is the Unlink adapter, not the agent wallet. See [ADR-001](./decisions/001-unlink-execute-for-private-swaps.md).
 
-### Escrow (2 tools) -- programmable payroll on Arc
+### Escrow & Cross-Chain (3 tools) -- smart payroll on Arc
 
 | Tool | What It Does | Inputs |
 |------|-------------|--------|
-| `create_escrow` | Deploy milestone payroll on Arc Testnet | `recipients[]`, `milestones[]` |
+| `create_escrow` | Deploy smart escrow on Arc Testnet | `recipients[]`, `milestones[]` |
 | `check_escrow` | Query payroll status, milestones, conditions | `payrollId` |
+| `run_cross_chain_payroll` | End-to-end: bridge via CCTP V2 (sender hidden) + create escrow + generate verify URLs | `recipients[]`, `milestones[]` |
 
-Each milestone can have a **time lock** (release after date) and/or an **oracle trigger** (release when ETH price crosses a threshold). Pro-rata distribution to multiple recipients via basis-point shares. See [ADR-002](./decisions/002-milestone-escrow-over-streaming.md).
+Each milestone can have a **time lock** (release after date) and/or an **oracle trigger** (release when ETH price crosses a threshold). Pro-rata distribution to multiple recipients via basis-point shares. `run_cross_chain_payroll` chains the entire flow: resolve ENS, bridge via CCTP V2, wait for attestation, create escrow, generate verify URLs. See [ADR-002](./decisions/002-milestone-escrow-over-streaming.md).
 
 ### Strategy Management (8 tools) -- recurring payments
 
@@ -174,7 +175,7 @@ The priority is always: **if there's an Unlink address available, use it.** This
 | File | What's Inside |
 |------|--------------|
 | [`agent/src/agent.ts`](../agent/src/agent.ts) | Main loop, system prompt, Claude API streaming |
-| [`agent/src/tools.ts`](../agent/src/tools.ts) | 23 tool definitions + `executeTool()` dispatcher |
+| [`agent/src/tools.ts`](../agent/src/tools.ts) | 25 tool definitions + `executeTool()` dispatcher |
 | [`agent/src/unlink.ts`](../agent/src/unlink.ts) | Unlink SDK wrapper (deposit, transfer, execute, batch) |
 | [`agent/src/uniswap.ts`](../agent/src/uniswap.ts) | Uniswap Trading API + on-chain quote fallback |
 | [`agent/src/strategies.ts`](../agent/src/strategies.ts) | Strategy CRUD, templates, execution tracking |

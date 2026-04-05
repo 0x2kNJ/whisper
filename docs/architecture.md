@@ -12,12 +12,12 @@ Four layers. Each one does exactly one job.
 graph TB
     subgraph Client["<b>Frontend</b> &mdash; Next.js 14"]
         UI["Chat UI + Treasury Dashboard"]
-        API["7 API Routes (SSE streaming)"]
+        API["10 API Routes (SSE streaming)"]
     end
 
     subgraph Agent["<b>AI Agent</b> &mdash; Claude Sonnet 4"]
         Claude["Natural Language &rarr; Tool Calls"]
-        Tools["23 Tools across 6 categories"]
+        Tools["25 Tools across 6 categories"]
     end
 
     subgraph Privacy["<b>Privacy Layer</b> &mdash; Base Sepolia"]
@@ -62,7 +62,7 @@ sequenceDiagram
     participant UNL as Unlink Pool
 
     U->>API: "Pay alice.eth 500 USDC privately"
-    API->>C: message + 23 tool definitions
+    API->>C: message + 25 tool definitions
 
     Note over C: Claude decides: resolve name, then transfer
 
@@ -183,7 +183,7 @@ All verified, all on testnets.
 | Contract | Address | Chain | What It Does |
 |----------|---------|-------|-------------|
 | **WhisperVault** | [`0x8684...09B1`](https://sepolia.basescan.org/address/0x86848019781cfd56A0483C17904a80Ca7C4F09B1) | Base Sepolia | USDC vault with agent spend authorization |
-| **WhisperEscrow** | [`0xf4e1...9eD6`](https://testnet.arcscan.app/address/0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6) | Arc Testnet | Milestone payroll with time + oracle conditions |
+| **WhisperEscrow** | [`0xf4e1...9eD6`](https://testnet.arcscan.app/address/0xf4e13a7d98A8Eb7945D937Fa33e5BBa287329eD6) | Arc Testnet | Smart escrow with time-locks + oracle price triggers |
 | **Unlink Pool** | `0x647f...f482` | Base Sepolia | ZK privacy pool for all transfers |
 | **CCTP V2** | `0x8FE6...2DAA` | Base Sepolia | Cross-chain USDC bridge to Arc |
 
@@ -198,8 +198,8 @@ All verified, all on testnets.
 
 | Component | Tech | Why |
 |-----------|------|-----|
-| **Chat + Dashboard** | Next.js 14, React 18, Tailwind | SSE streaming, glassmorphism UI |
-| **AI Agent** | Claude Sonnet 4 (tool_use) | Best tool-calling model, streams reasoning |
+| **Chat + Dashboard** | Next.js 14, React 18, Tailwind | SSE streaming, glassmorphism UI, treasury dashboard |
+| **AI Agent** | Claude (tool_use) | 25 tools, streaming SSE, autonomous multi-step execution |
 | **Privacy** | Unlink SDK (`@unlink-xyz/sdk`) | Only ZK protocol with `execute()` for arbitrary DeFi calls |
 | **Swaps** | Uniswap Trading API | Production routing, UniswapX gasless orders |
 | **Escrow** | Solidity 0.8.24 (Foundry) | Milestone payroll with oracle price triggers |
