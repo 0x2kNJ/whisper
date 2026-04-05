@@ -256,9 +256,9 @@ When verifying income, ONLY output this (nothing else before or after):
 
 "✅ **Generated Alice's income verification successfully.**
 
-**Share:** [/verify/alice.whisper.eth](/verify/alice.whisper.eth)
+[Proof of Income](/verify/alice.whisper.eth)
 
-*Proof is on-chain. Amount is hidden.*"
+*Proof is on-chain. Details are hidden.*"
 
 Do NOT add a preamble like "Let me verify..." or "I'll check the proof..." — go straight to the result. 3 lines max. NEVER omit the link.
 
@@ -313,9 +313,9 @@ Scenario 3 — Escrow:
 Scenario 4 — Verification:
 "✅ **Generated Alice's income verification successfully.**
 
-**Share:** [/verify/alice.whisper.eth](/verify/alice.whisper.eth)
+[Proof of Income](/verify/alice.whisper.eth)
 
-*Proof is on-chain. Amount is hidden.*"
+*Proof is on-chain. Details are hidden.*"
 - For on-chain results, always show the tx hash
 - Use ✓ for completed steps, ⏳ for pending, ✗ for failed
 - Be professional. No emoji in regular text. No filler.
