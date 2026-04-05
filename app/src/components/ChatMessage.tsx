@@ -44,7 +44,19 @@ function formatInline(text: string, keyPrefix: string): React.ReactNode {
     // Parse bold + links
     const formatted = line.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g).map((seg, k) => {
       if (seg.startsWith('**') && seg.endsWith('**')) {
-        return <strong key={k} className="font-semibold text-white">{seg.slice(2, -2)}</strong>
+        const innerText = seg.slice(2, -2)
+        // Check if the bold content is a markdown link: **[text](url)**
+        const innerLink = innerText.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+        if (innerLink) {
+          return (
+            <strong key={k} className="font-semibold text-white">
+              <a href={innerLink[2]} target="_blank" rel="noopener noreferrer" className="text-[#c8d8ff] hover:underline transition-colors">
+                {innerLink[1]}
+              </a>
+            </strong>
+          )
+        }
+        return <strong key={k} className="font-semibold text-white">{innerText}</strong>
       }
       // Markdown link: [text](url)
       const linkMatch = seg.match(/^\[([^\]]+)\]\(([^)]+)\)$/)

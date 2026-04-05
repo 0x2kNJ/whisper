@@ -6,9 +6,19 @@
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createPublicClient, http } from 'viem'
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  namehash,
+  keccak256,
+  toHex,
+  encodeFunctionData,
+  type Address,
+} from 'viem'
 import { normalize } from 'viem/ens'
 import { sepolia } from 'viem/chains'
+import { privateKeyToAccount } from 'viem/accounts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = join(__dirname, '..', 'data')
@@ -138,6 +148,138 @@ export function getAddress(name: string): string | undefined {
 /** Return a copy of all saved addresses */
 export function listAddresses(): Record<string, string> {
   return { ..._book }
+}
+
+// ---------------------------------------------------------------------------
+// ENS Text Record Writing
+// ---------------------------------------------------------------------------
+
+const ENS_RESOLVER_ABI = [
+  {
+    name: 'setText',
+    type: 'function' as const,
+    stateMutability: 'nonpayable' as const,
+    inputs: [
+      { name: 'node', type: 'bytes32' },
+      { name: 'key', type: 'string' },
+      { name: 'value', type: 'string' },
+    ],
+    outputs: [],
+  },
+] as const
+
+const ENS_REGISTRY_ABI = [
+  {
+    name: 'resolver',
+    type: 'function' as const,
+    stateMutability: 'view' as const,
+    inputs: [{ name: 'node', type: 'bytes32' }],
+    outputs: [{ type: 'address' }],
+  },
+] as const
+
+// Sepolia ENS registry address (same as mainnet)
+const ENS_REGISTRY = '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e' as Address
+
+/**
+ * Write a single text record to an ENS name on Sepolia.
+ * Uses the ENS_PRIVATE_KEY from .env (owner of whisper.eth subnames).
+ */
+export async function writeEnsTextRecord(
+  ensName: string,
+  key: string,
+  value: string,
+): Promise<{ txHash: string }> {
+  const pk = process.env.ENS_PRIVATE_KEY
+  if (!pk) throw new Error('ENS_PRIVATE_KEY not set in .env')
+
+  const rpcUrl =
+    process.env.ETH_SEPOLIA_RPC_URL ||
+    'https://eth-sepolia.g.alchemy.com/v2/FMZ3q69r-qEw-ScYg8pz3'
+
+  const account = privateKeyToAccount(pk as `0x${string}`)
+
+  const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: http(rpcUrl),
+  })
+  const walletClient = createWalletClient({
+    account,
+    chain: sepolia,
+    transport: http(rpcUrl),
+  })
+
+  const normalizedName = normalize(ensName)
+  const node = namehash(normalizedName)
+
+  // Look up the resolver for this name
+  const resolverAddress = (await publicClient.readContract({
+    address: ENS_REGISTRY,
+    abi: ENS_REGISTRY_ABI,
+    functionName: 'resolver',
+    args: [node],
+  })) as Address
+
+  if (!resolverAddress || resolverAddress === '0x0000000000000000000000000000000000000000') {
+    throw new Error(`No resolver found for ${ensName}`)
+  }
+
+  // Call setText on the resolver
+  const txHash = await walletClient.sendTransaction({
+    to: resolverAddress,
+    data: encodeFunctionData({
+      abi: ENS_RESOLVER_ABI,
+      functionName: 'setText',
+      args: [node, key, value],
+    }),
+  })
+
+  await publicClient.waitForTransactionReceipt({ hash: txHash })
+
+  return { txHash }
+}
+
+/**
+ * Publish a full set of payroll proof records to an ENS name.
+ * Writes payroll.proof, payroll.timestamp, payroll.period, payroll.payer,
+ * payroll.frequency, and payroll.status as text records.
+ *
+ * Returns the tx hash of the last write (all writes go to the same resolver).
+ */
+export async function publishPayrollProof(
+  ensName: string,
+  proofData: {
+    txHash?: string       // Unlink tx hash to derive proof from
+    period?: string       // e.g. "April 2026"
+    payer?: string        // e.g. "Whisper Treasury"
+    frequency?: string    // e.g. "Monthly"
+  },
+): Promise<{ proofHash: string; txHashes: string[] }> {
+  const timestamp = new Date().toISOString()
+  const seed = `${proofData.txHash || ensName}:${ensName}:${timestamp}`
+  const proofHash = keccak256(toHex(seed))
+
+  const records: [string, string][] = [
+    ['payroll.proof', proofHash],
+    ['payroll.timestamp', timestamp],
+    ['payroll.period', proofData.period || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })],
+    ['payroll.payer', proofData.payer || 'Whisper Treasury'],
+    ['payroll.frequency', proofData.frequency || 'Monthly'],
+    ['payroll.status', 'Confirmed'],
+  ]
+
+  const txHashes: string[] = []
+  for (const [key, value] of records) {
+    try {
+      const result = await writeEnsTextRecord(ensName, key, value)
+      txHashes.push(result.txHash)
+    } catch (err) {
+      console.error(`Failed to write ${key} for ${ensName}:`, err)
+      // Continue writing other records even if one fails
+    }
+  }
+
+  return { proofHash, txHashes }
 }
 
 // Auto-load on import (fire-and-forget — sync fallback above handles the race)

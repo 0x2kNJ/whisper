@@ -54,6 +54,9 @@ export const CCTP_ARC_DOMAIN = 26 // Arc Testnet destination domain (Circle-issu
 // Unlink adapter — executes calls on behalf of the pool. Discovered on-chain from execute() tx traces.
 export const UNLINK_ADAPTER = '0x41BF8f07BC4644055db5BA95c422AAC1Be810Be3'
 
+// App base URL — used for absolute verify links in chat
+export const APP_BASE_URL = process.env.APP_BASE_URL || 'https://app-gamma-one-12.vercel.app'
+
 export function getEnvOrThrow(key: string): string {
   const val = process.env[key]
   if (!val) throw new Error(`Missing env var: ${key}`)

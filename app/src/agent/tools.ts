@@ -19,7 +19,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 import { randomUUID } from 'node:crypto'
 import { dbReadBalanceCache, dbWriteBalanceCache } from '@/lib/db'
 
-import { baseSepolia, arcTestnet, getEnvOrThrow, CCTP_TOKEN_MESSENGER_V2, CCTP_ARC_DOMAIN, UNLINK_ADAPTER } from './config'
+import { baseSepolia, arcTestnet, getEnvOrThrow, CCTP_TOKEN_MESSENGER_V2, CCTP_ARC_DOMAIN, UNLINK_ADAPTER, APP_BASE_URL } from './config'
 import {
   createUnlinkClientWrapper,
   getBalances,
@@ -41,7 +41,7 @@ import {
   type PayrollMessage,
   type EncryptedMessage,
 } from './messaging'
-import { saveAddress, getAddress, listAddresses, resolveENS } from './addressBook'
+import { saveAddress, getAddress, listAddresses, resolveENS, publishPayrollProof } from './addressBook'
 import { dryRunPayroll } from './scheduler'
 import {
   createStrategy,
@@ -1097,6 +1097,13 @@ export async function executeTool(
                   : `${String(input.recipient).toLowerCase()}.whisper.eth`
             )
 
+            // Auto-publish proof to ENS
+            if (displayRecipient?.endsWith('.whisper.eth')) {
+              publishPayrollProof(displayRecipient, { txHash: result.txHash }).catch((e) =>
+                console.error(`Auto-publish proof failed for ${displayRecipient}:`, e),
+              )
+            }
+
             return JSON.stringify({
               success: true,
               recipient: displayRecipient || input.recipient,
@@ -1104,7 +1111,7 @@ export async function executeTool(
               token: input.token,
               txHash: result.txHash,
               explorerUrl: baseSepoliaExplorerUrl(result.txHash),
-              ...(displayRecipient ? { verifyUrl: `/verify/${displayRecipient}` } : {}),
+              ...(displayRecipient ? { verifyUrl: `${APP_BASE_URL}/verify/${displayRecipient}` } : {}),
               message: `Privately transferred ${input.amount} ${input.token} to ${displayRecipient || input.recipient}. ZK-shielded via Unlink.`,
             })
           } catch (err) {
@@ -1190,12 +1197,21 @@ export async function executeTool(
             })),
           })
 
+          // Auto-publish proofs for .whisper.eth recipients
+          for (const r of resolved) {
+            if (r.ensName?.endsWith('.whisper.eth')) {
+              publishPayrollProof(r.ensName, { txHash: result.txHash }).catch((e) =>
+                console.error(`Auto-publish proof failed for ${r.ensName}:`, e),
+              )
+            }
+          }
+
           const results = resolved.map((r) => ({
             name: r.originalName,
             amount: r.amount,
             token: input.token,
             status: 'sent',
-            verifyUrl: r.ensName ? `/verify/${r.ensName}` : null,
+            verifyUrl: r.ensName ? `${APP_BASE_URL}/verify/${r.ensName}` : null,
           }))
 
           return JSON.stringify({
@@ -1859,7 +1875,15 @@ export async function executeTool(
               })
               const displayName = recipient.name || addr
               const ensName = displayName.toLowerCase().endsWith('.eth') ? displayName : `${displayName.toLowerCase()}.whisper.eth`
-              results.push({ name: displayName, amount: recipient.amount, success: true, verifyUrl: `/verify/${ensName}` })
+
+              // Auto-publish proof to ENS
+              if (ensName.endsWith('.whisper.eth')) {
+                publishPayrollProof(ensName, { txHash: result.txHash }).catch((e) =>
+                  console.error(`Auto-publish proof failed for ${ensName}:`, e),
+                )
+              }
+
+              results.push({ name: displayName, amount: recipient.amount, success: true, verifyUrl: `${APP_BASE_URL}/verify/${ensName}` })
               break
             } catch (err) {
               if (attempt === 0) {
@@ -2001,23 +2025,15 @@ export async function executeTool(
           // ENS resolution failed — fall through to deterministic proof
         }
 
-        // Use on-chain proof if available, otherwise generate a deterministic
-        // proof for all .whisper.eth names (Whisper-managed recipients)
-        let finalProofHash = proofHash
-        if (!finalProofHash && ensName.endsWith('.whisper.eth')) {
-          const { keccak256, toHex } = await import('viem')
-          const seed = unlinkAddr || ensName
-          finalProofHash = keccak256(toHex(`whisper-proof:${seed}:${ensName}`))
-        }
-
-        if (finalProofHash) {
+        // No fake fallback — verification only succeeds with real on-chain proof
+        if (proofHash) {
           return JSON.stringify({
             success: true,
             name: ensName,
             verified: true,
             proof: {
-              hash: finalProofHash,
-              timestamp: proofTimestamp || new Date().toISOString(),
+              hash: proofHash,
+              timestamp: proofTimestamp || null,
               unlinkAddress: unlinkAddr,
             },
             privacy: {
@@ -2026,8 +2042,8 @@ export async function executeTool(
               recipientVisible: false,
               proofPublic: true,
             },
-            verifyUrl: `/verify/${ensName}`,
-            message: `Payment proof verified for ${ensName}. ZK proof hash: ${finalProofHash.slice(0, 16)}... — this cryptographically proves ${ensName.split('.')[0]} was paid, without revealing the amount, sender, or other recipients. The proof is publicly verifiable on-chain but the payment details remain private.`,
+            verifyUrl: `${APP_BASE_URL}/verify/${ensName}`,
+            message: `Payment proof verified for ${ensName}. ZK proof hash: ${proofHash.slice(0, 16)}... — this cryptographically proves ${ensName.split('.')[0]} was paid, without revealing the amount, sender, or other recipients. The proof is publicly verifiable on-chain but the payment details remain private.`,
           })
         }
 
@@ -2036,7 +2052,8 @@ export async function executeTool(
           name: ensName,
           verified: false,
           unlinkAddress: unlinkAddr,
-          message: `${ensName} has no Unlink address or payment proof. They may need to register a privacy address first.`,
+          verifyUrl: `${APP_BASE_URL}/verify/${ensName}`,
+          message: `No payment proof found on-chain for ${ensName}. Run a private transfer first, then the proof will be published to ENS automatically.`,
         })
       }
 
@@ -2256,7 +2273,7 @@ export async function executeTool(
           name: r.name,
           ensName: r.ensName,
           amount: r.amount,
-          verifyUrl: `/verify/${r.ensName}`,
+          verifyUrl: `${APP_BASE_URL}/verify/${r.ensName}`,
         }))
 
         steps.push(`Generated ${verifyResults.length} verify URLs`)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createPublicClient, http, keccak256, toHex } from 'viem'
+import { createPublicClient, http } from 'viem'
 import { sepolia } from 'viem/chains'
 import { normalize } from 'viem/ens'
 
@@ -70,17 +70,8 @@ export async function GET(
     // For .whisper.eth names we can still verify — fall through
   }
 
-  // All .whisper.eth subnames are Whisper-managed recipients. Generate a
-  // deterministic proof so the verify page always shows "Income Verified".
-  if (!proofHash && ensName.endsWith('.whisper.eth')) {
-    const seed = unlinkAddress || ensName
-    proofHash = keccak256(toHex(`whisper-proof:${seed}:${ensName}`))
-    proofTimestamp = proofTimestamp || new Date().toISOString()
-    payrollPeriod = payrollPeriod || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-    payrollFrequency = payrollFrequency || 'Monthly'
-    payrollPayer = payrollPayer || 'Whisper Treasury'
-    payrollStatus = payrollStatus || 'Confirmed'
-  }
+  // No fake fallback — verification only succeeds when a real proof
+  // exists in ENS text records (written by publish_proof / auto-publish).
 
   return NextResponse.json({
     name: ensName,

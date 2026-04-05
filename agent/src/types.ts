@@ -85,4 +85,5 @@ export type ToolName =
   | 'list_contacts'
   | 'resolve_ens'
   | 'verify_payment_proof'
+  | 'publish_proof'
   | 'run_cross_chain_payroll'

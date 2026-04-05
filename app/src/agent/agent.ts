@@ -136,7 +136,7 @@ When executing multi-step operations:
 - Format: Block Explorer | [View on BaseScan](explorerUrl) or [View on ArcScan](explorerUrl) — use the FULL explorerUrl exactly as provided in the result.
 - NEVER show a plain text hash — it MUST be a clickable markdown link labeled "View on BaseScan" or "View on ArcScan".
 - For multi-recipient payroll results, use a table with columns: Name | Amount | Status | Verify
-  - The Verify column MUST be a markdown link labeled "Proof of Income": [Proof of Income](/verify/name.whisper.eth)
+  - The Verify column MUST be a markdown link labeled "Proof of Income": [Proof of Income](https://app-gamma-one-12.vercel.app/verify/name.whisper.eth)
 
 Example escrow table:
 
@@ -152,8 +152,8 @@ Example payroll table:
 
 | Name | Amount | Status | Verify |
 |------|--------|--------|--------|
-| alice | 0.001 USDC | ✓ Sent | [Proof of Income](/verify/alice.whisper.eth) |
-| bob | 0.001 USDC | ✓ Sent | [Proof of Income](/verify/bob.whisper.eth) |
+| alice | 0.001 USDC | ✓ Sent | [Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth) |
+| bob | 0.001 USDC | ✓ Sent | [Proof of Income](https://app-gamma-one-12.vercel.app/verify/bob.whisper.eth) |
 
 - NEVER use bullet lists for structured data. Tables are cleaner and more professional.
 - NEVER omit the Block Explorer link from results. Judges need to verify on-chain.
@@ -215,8 +215,8 @@ After the batch completes, show a SINGLE summary table with EVERY recipient:
 
 | Name | Amount | Status | Verify |
 |------|--------|--------|--------|
-| alice | 0.001 USDC | ✓ Sent | [Proof of Income](/verify/alice.whisper.eth) |
-| bob | 0.001 USDC | ✓ Sent | [Proof of Income](/verify/bob.whisper.eth) |
+| alice | 0.001 USDC | ✓ Sent | [Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth) |
+| bob | 0.001 USDC | ✓ Sent | [Proof of Income](https://app-gamma-one-12.vercel.app/verify/bob.whisper.eth) |
 
 NEVER omit recipients from the table. If you transferred to alice AND bob, BOTH must appear.
 
@@ -262,13 +262,13 @@ Do NOT include a verification link for:
 - Balance checks
 - Deposits
 
-The link format: **[Proof of Income](/verify/alice.whisper.eth)**
+The link format: **[Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth)**
 
 When verifying income, ONLY output this (nothing else before or after):
 
 "✅ **Generated Alice's income verification successfully.**
 
-**[Proof of Income](/verify/alice.whisper.eth)**
+**[Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth)**
 
 *Proof is on-chain. Amount is hidden.*"
 
@@ -296,15 +296,15 @@ Scenario 1 — Single payment:
 
 **Privacy: Sender and amount hidden on-chain.**
 
-**[Proof of Income](/verify/alice.whisper.eth)**"
+**[Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth)**"
 
 Scenario 2 — Payroll:
 "Running payroll for **alice** and **bob**.
 
 | Name | Amount | Status | Verify |
 |------|--------|--------|--------|
-| alice.whisper.eth | 0.001 USDC | ✓ Sent | [Proof of Income](/verify/alice.whisper.eth) |
-| bob.whisper.eth | 0.001 USDC | ✓ Sent | [Proof of Income](/verify/bob.whisper.eth) |
+| alice.whisper.eth | 0.001 USDC | ✓ Sent | [Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth) |
+| bob.whisper.eth | 0.001 USDC | ✓ Sent | [Proof of Income](https://app-gamma-one-12.vercel.app/verify/bob.whisper.eth) |
 
 **Privacy: All payments ZK-shielded. On-chain observers see only pool activity.**"
 
@@ -325,7 +325,7 @@ Scenario 3 — Escrow:
 Scenario 4 — Verification:
 "✅ **Generated Alice's income verification successfully.**
 
-**[Proof of Income](/verify/alice.whisper.eth)**
+**[Proof of Income](https://app-gamma-one-12.vercel.app/verify/alice.whisper.eth)**
 
 *Proof is on-chain. Amount is hidden.*"
 - For on-chain results, always show the tx hash
