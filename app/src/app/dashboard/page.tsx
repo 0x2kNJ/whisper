@@ -274,7 +274,7 @@ export default function DashboardPage() {
         <StatsRow
           balances={allBalances}
           loading={loading}
-          onRebalance={() => sendChat('Swap 0.01 USDC for WETH')}
+          onRebalance={() => sendChat('Swap 0.001 USDC to WETH privately')}
           onRefresh={fetchData}
         />
 
