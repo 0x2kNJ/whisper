@@ -1,41 +1,7 @@
 import { NextRequest } from 'next/server'
-import path from 'path'
+import { runAgent, type AgentMessage } from '@/agent/agent'
 
-// ---------------------------------------------------------------------------
-// Dynamic import of the agent (lives in the monorepo's agent/ package)
-// We use a path alias so this works from app/ when AGENT_PATH is set.
-// ---------------------------------------------------------------------------
-
-async function loadAgent() {
-  // Allow override via env (useful in CI / Docker)
-  const agentPath =
-    process.env.AGENT_MODULE_PATH ??
-    path.resolve(process.cwd(), '../agent/src/agent.ts')
-
-  // Next.js bundles TS files at build time but at runtime (dev) we rely on ts-node / tsx.
-  // For production, the agent must be compiled. We try both .js and .ts extensions.
-  const candidates = [
-    // Compiled output
-    agentPath.replace(/\.ts$/, '.js'),
-    // Raw TS (works with tsx / ts-node)
-    agentPath,
-    // From dist/
-    agentPath.replace('/src/', '/dist/').replace(/\.ts$/, '.js'),
-  ]
-
-  let lastError: Error | null = null
-  for (const candidate of candidates) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const mod = await import(/* webpackIgnore: true */ candidate)
-      return mod
-    } catch (err) {
-      lastError = err as Error
-    }
-  }
-
-  throw lastError ?? new Error('Could not load agent module')
-}
+export const maxDuration = 60
 
 // ---------------------------------------------------------------------------
 // SSE helpers
@@ -61,7 +27,7 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const { message, history = [] } = body
+  const { message, history = [] } = body as { message?: string; history?: AgentMessage[] }
 
   if (!message || typeof message !== 'string') {
     return new Response(JSON.stringify({ error: 'message is required' }), {
@@ -80,10 +46,6 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        // Load agent dynamically (avoids bundling issues with Anthropic SDK in edge)
-        const agent = await loadAgent()
-        const { runAgent } = agent
-
         const startTime = Date.now()
         let accumulatedText = ''
 

@@ -5,7 +5,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const conv = getConversation(params.id)
+  const conv = await getConversation(params.id)
   if (!conv) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
@@ -16,7 +16,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const deleted = deleteConversation(params.id)
+  const deleted = await deleteConversation(params.id)
   if (!deleted) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }

@@ -5,7 +5,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const conv = getConversation(params.id)
+  const conv = await getConversation(params.id)
   if (!conv) {
     return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
   }
@@ -28,8 +28,10 @@ export async function POST(
     return NextResponse.json({ error: 'messages array required' }, { status: 400 })
   }
 
-  const saved = body.messages.map((m) =>
-    saveMessage(params.id, m.role, m.text, m.toolCalls ?? []),
+  const saved = await Promise.all(
+    body.messages.map((m) =>
+      saveMessage(params.id, m.role, m.text, m.toolCalls ?? []),
+    ),
   )
 
   return NextResponse.json({ saved }, { status: 201 })

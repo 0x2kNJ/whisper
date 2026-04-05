@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { listConversationsWithStats, createConversation } from '@/lib/db'
 
 export async function GET() {
-  const conversations = listConversationsWithStats()
+  const conversations = await listConversationsWithStats()
   return NextResponse.json({ conversations })
 }
 
@@ -15,6 +15,6 @@ export async function POST(req: NextRequest) {
   }
 
   const title = (body.title ?? 'New conversation').slice(0, 50)
-  const conv = createConversation(title)
+  const conv = await createConversation(title)
   return NextResponse.json(conv, { status: 201 })
 }

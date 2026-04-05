@@ -99,7 +99,7 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '20', 10)
 
     const items: ActivityItem[] = []
-    const messages = getAssistantMessagesWithToolCalls()
+    const messages = await getAssistantMessagesWithToolCalls()
 
     for (const msg of messages) {
       try {
